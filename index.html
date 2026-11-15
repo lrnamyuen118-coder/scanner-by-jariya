@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>สแกนเอกสาร</title>
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -71,7 +71,16 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .layoutG{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .layoutG button{flex-direction:column;background:var(--bg);color:var(--ink);padding:12px;min-height:auto;gap:6px}
 .layoutG svg{width:70px;height:99px}
-@media(max-width:720px){.idWrap{grid-template-columns:minmax(0,1fr)}}
+html,body{overflow-x:hidden;touch-action:pan-y}
+@media(max-width:720px){
+  #idv.on{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+  #idv .nav{flex:none}
+  .idWrap{flex:1;min-height:0;display:flex;flex-direction:column;padding:0;gap:0;max-width:none;margin:0;width:100%;align-items:stretch}
+  .idPaper{flex:none;height:44vh;height:44dvh;border-radius:0;padding:10px;box-shadow:0 6px 12px -8px #0004;position:relative;z-index:1}
+  .idPaper{display:flex;align-items:center;justify-content:center}
+  #a4cv{height:calc(44vh - 20px);height:calc(44dvh - 20px);width:auto;max-width:100%;flex:none}
+  .idCtl{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:14px 16px calc(env(safe-area-inset-bottom) + 28px)}
+}
 /* camera */
 #cam .stage,#rev .stage{position:relative;touch-action:none;overflow:hidden}
 .stage canvas{position:absolute;inset:0;width:100%;height:100%}
@@ -339,7 +348,7 @@ const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&qu
 $("#docs").addEventListener("click",async e=>{const x=e.target.closest("[data-x]");if(x){e.stopPropagation();const i=+x.dataset.x;if(await ask(`ลบ “${esc(docs[i].title)}” ?`,"ลบเอกสาร")){unpersist(docs[i].id);docs.splice(i,1);drawHome()}return}
   const o=e.target.closest("[data-o]");if(o)openDoc(docs[+o.dataset.o])});
 $("#docs").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset.o!=null)e.target.click()});
-$("#newScan").onclick=()=>{doc=null;startCam()};
+$("#newScan").onclick=()=>{doc=null;mode="auto";startCam()};
 
 // ---------- camera ----------
 const video=$("#video"),ccv=$("#ccv"),cctx=ccv.getContext("2d");
@@ -453,13 +462,14 @@ $("#tDel").onclick=async()=>{const p=doc.pages[cur];if(!p)return;
 // ---------- ID card ----------
 const CARD_W=85.6,CARD_H=54,GAP=20,DPI=200,MM=DPI/25.4;
 const WM_PRE=["ใช้สำหรับสมัครงานเท่านั้น","ใช้สำหรับยืนยันตัวตนเท่านั้น","ใช้สำหรับเปิดบัญชีธนาคารเท่านั้น","ใช้สำหรับติดต่อราชการเท่านั้น"];
-let idS={layout:2,step:0,cards:[],gray:[],src:[],quad:[],retake:false,color:"gray"},idQuad=null;
+let idS={layout:1,step:0,cards:[],gray:[],src:[],quad:[],retake:false,color:"gray"},idQuad=null;
 const prefs=(()=>{try{return JSON.parse(localStorage.getItem("idPrefs"))||{}}catch{return{}}})();
 let fs=prefs.fs||16;
 function savePrefs(){try{localStorage.setItem("idPrefs",JSON.stringify({wm:$("#wm").value,cert:$("#cert").checked,pre:$("#pre").value,nm:$("#nm").value,fs,wmColor:ov.wmColor,wmSize:ov.wmSize,wmAngle:ov.wmAngle,color:idS.color,wmAlign:ov.wmAlign,certAlign:ov.certAlign}))}catch{}}
 const tops=()=>idS.layout===1?[(297-CARD_H)/2]:[(297-CARD_H*2-GAP)/2,(297-CARD_H*2-GAP)/2+CARD_H+GAP];
 function miniA4(n){const t=n===1?[(297-54)/2]:[84.5,158.5];return`<svg viewBox="0 0 210 297" aria-hidden="true"><rect x="1" y="1" width="208" height="295" fill="#fff" stroke="#c7c7cc" stroke-width="2"/>${t.map(y=>`<rect x="62.2" y="${y}" width="85.6" height="54" rx="4" fill="#fff8d6" stroke="#e0a800" stroke-width="3" stroke-dasharray="8 5"/>`).join("")}</svg>`}
 $("#newId").onclick=()=>{
+  idS.layout=1;mode="manual";
   sheet(`<p>รูปแบบบนกระดาษ A4</p><div class="layoutG"><button data-l="1">${miniA4(1)}1 กรอบ</button><button data-l="2">${miniA4(2)}2 กรอบ (หน้า + หลัง)</button></div>
   <p>วิธีถ่าย</p><div class="layoutG"><button data-md="auto">อัตโนมัติ</button><button data-md="manual">กดถ่ายเอง</button></div>
   <button id="idGo" style="background:var(--yel);color:#111;font-weight:700">เริ่มถ่าย</button><button id="idX">ยกเลิก</button>`);
@@ -467,7 +477,7 @@ $("#newId").onclick=()=>{
   $("#sheet").querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>{idS.layout=+b.dataset.l;sync()});
   $("#sheet").querySelectorAll("[data-md]").forEach(b=>b.onclick=()=>{mode=b.dataset.md;sync()});
   $("#idX").onclick=closeSheet;
-  $("#idGo").onclick=()=>{closeSheet();idS={...idS,step:0,cards:[],gray:[],src:[],quad:[],retake:false};ovNew=true;sel=null;$("#ocrMsg").textContent="";startCam("id")};
+  $("#idGo").onclick=()=>{closeSheet();idS={...idS,step:0,cards:[],gray:[],src:[],quad:[],retake:false};ovNew=true;sel=null;ov.wmAlign="center";ov.certAlign="center";$("#ocrMsg").textContent="";startCam("id")};
 };
 function idLabel(){$("#camLabel").textContent=idS.layout===1?"บัตรประชาชน":idS.step===0?"ด้านหน้า · 1/2":"ด้านหลัง · 2/2"}
 function guideRect(W,H){const gw=Math.min(W*.86,H*.6*CARD_W/CARD_H),gh=gw*CARD_H/CARD_W;return{x:(W-gw)/2,y:(H-gh)/2,w:gw,h:gh}}
@@ -500,7 +510,7 @@ function idStore(card,src,quad){
 }
 // overlay objects on the A4 page, in mm
 const WMC={red:"rgba(212,32,32,.78)",black:"rgba(20,20,20,.72)",blue:"rgba(31,63,174,.75)"};
-let ov={wm:[],wmSize:prefs.wmSize||6.5,wmAngle:prefs.wmAngle??-16,wmColor:prefs.wmColor||"blue",cert:{x:105,y:null},wmAlign:prefs.wmAlign||"center",certAlign:prefs.certAlign||"center"},ovNew=true,hits=[],sel=null;
+let ov={wm:[],wmSize:prefs.wmSize||6.5,wmAngle:prefs.wmAngle??-16,wmColor:prefs.wmColor||"blue",cert:{x:105,y:null},wmAlign:"center",certAlign:"center"},ovNew=true,hits=[],sel=null;
 const AX={left:(210-CARD_W)/2+2,center:105,right:(210+CARD_W)/2-2},CX={left:(210-CARD_W)/2,center:105,right:(210+CARD_W)/2};
 const resetWm=()=>{ov.wm=tops().map(t=>({x:AX[ov.wmAlign],y:t+CARD_H/2}))};
 const resetCert=()=>{ov.cert={x:CX[ov.certAlign],y:null}};
@@ -535,6 +545,8 @@ $("#wAng").value=ov.wmAngle;$("#wAngV").textContent=ov.wmAngle+"°";
 $("#wReset").onclick=()=>{resetWm();renderA4()};
 $("#cReset").onclick=()=>{resetCert();renderA4()};
 const FONT='Anuphan,"Noto Sans Thai",sans-serif';
+// place text by measuring it, so alignment never depends on the browser's textAlign handling
+function put(x,t,X,Y,al){x.textAlign="left";x.direction="ltr";const w=x.measureText(t).width;x.fillText(t,al==="center"?X-w/2:al==="right"?X-w:X,Y);return w}
 let fontsOk=null;
 async function renderA4(exp=false){
   if(!fontsOk)fontsOk=Promise.all([document.fonts.load(`400 40px Anuphan`,"สำเนาถูกต้อง"),document.fonts.load(`700 40px Anuphan`,"ใช้สำหรับ")]).catch(()=>{});
@@ -549,14 +561,14 @@ function drawA4(exp){
       x.save();x.beginPath();x.roundRect(cx,y,cw,ch,r);x.clip();x.drawImage(card,cx,y,cw,ch);x.restore();
       x.strokeStyle="#cfcfcf";x.lineWidth=1.5;x.beginPath();x.roundRect(cx,y,cw,ch,r);x.stroke()}
     else{x.setLineDash([18,12]);x.strokeStyle="#e0a800";x.lineWidth=4;x.beginPath();x.roundRect(cx,y,cw,ch,r);x.stroke();x.setLineDash([]);
-      x.fillStyle="#b38600";x.font=`400 ${5*MM}px ${FONT}`;x.textAlign="center";x.textBaseline="middle";x.fillText(idS.layout===2?(i?"ด้านหลัง":"ด้านหน้า"):"บัตรประชาชน",W/2,y+ch/2)}});
-  if(wm){const s=ov.wmSize*MM,a=ov.wmAngle*Math.PI/180;x.font=`700 ${s}px ${FONT}`;x.textAlign=ov.wmAlign;x.textBaseline="middle";const w=x.measureText(wm).width,off=ov.wmAlign==="left"?w/2:ov.wmAlign==="right"?-w/2:0;
-    ov.wm.forEach((o,i)=>{x.save();x.translate(o.x*MM,o.y*MM);x.rotate(a);x.fillStyle=WMC[ov.wmColor];x.fillText(wm,0,0);x.restore();hits.push({t:"wm",i,cx:o.x*MM+Math.cos(a)*off,cy:o.y*MM+Math.sin(a)*off,w,h:s*1.4,a})})}
+      x.fillStyle="#b38600";x.font=`400 ${5*MM}px ${FONT}`;x.textBaseline="middle";put(x,idS.layout===2?(i?"ด้านหลัง":"ด้านหน้า"):"บัตรประชาชน",W/2,y+ch/2,"center")}});
+  if(wm){const s=ov.wmSize*MM,a=ov.wmAngle*Math.PI/180;x.font=`700 ${s}px ${FONT}`;x.textAlign="left";x.direction="ltr";x.textBaseline="middle";const w=x.measureText(wm).width,off=ov.wmAlign==="left"?w/2:ov.wmAlign==="right"?-w/2:0;
+    ov.wm.forEach((o,i)=>{x.save();x.translate(o.x*MM,o.y*MM);x.rotate(a);x.fillStyle=WMC[ov.wmColor];put(x,wm,0,0,ov.wmAlign);x.restore();hits.push({t:"wm",i,cx:o.x*MM+Math.cos(a)*off,cy:o.y*MM+Math.sin(a)*off,w,h:s*1.4,a})})}
   if($("#cert").checked){
     const px=fs/72*25.4*MM,lh=px*1.6,top=(ov.cert.y??(T[T.length-1]+CARD_H+8))*MM,X=ov.cert.x*MM;
     const nm=$("#nm").value.trim(),line=nm?`(${$("#pre").value}${nm})`:"(..................................................)";
-    x.fillStyle="#111";x.textAlign=ov.certAlign;x.textBaseline="alphabetic";x.font=`400 ${px}px ${FONT}`;
-    const b1=top+px,b3=b1+lh*2.4;x.fillText("สำเนาถูกต้อง",X,b1);x.fillText(line,X,b3);
+    x.fillStyle="#111";x.textBaseline="alphabetic";x.font=`400 ${px}px ${FONT}`;
+    const b1=top+px,b3=b1+lh*2.4;put(x,"สำเนาถูกต้อง",X,b1,ov.certAlign);put(x,line,X,b3,ov.certAlign);
     const w=Math.max(x.measureText("สำเนาถูกต้อง").width,x.measureText(line).width),h=b3+px*.45-top;hits.push({t:"cert",cx:X+(ov.certAlign==="left"?w/2:ov.certAlign==="right"?-w/2:0),cy:top+h/2,w,h,a:0})}
   if(!exp&&sel){const hh=hits.find(h=>h.t===sel.t&&(h.t!=="wm"||h.i===sel.i));if(hh){x.save();x.translate(hh.cx,hh.cy);x.rotate(hh.a);x.setLineDash([14,10]);x.strokeStyle="#e0a800";x.lineWidth=3;x.strokeRect(-hh.w/2-12,-hh.h/2-8,hh.w+24,hh.h+16);x.restore()}}
 }
