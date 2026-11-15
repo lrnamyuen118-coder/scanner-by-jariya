@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>สแกนเอกสาร</title>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: quiet, native-feeling, like the scanner inside iPhone Notes
+   IDEA: a notes app's document scanner — live camera, yellow edge frame, page stack
+   PICTURE: the live viewfinder with the detected sheet glowing yellow
+   COLOUR and TYPE: system grey ground, white cards, Notes yellow accent; Anuphan
+   LAYOUT: list → full-screen camera → review → document pager with bottom toolbar */
+:root{color-scheme:light dark;--bg:light-dark(#f2f2f7,#000);--card:light-dark(#fff,#1c1c1e);--ink:light-dark(#111,#f2f2f7);--mute:light-dark(#6c6c70,#98989f);--line:light-dark(#e3e3e8,#2c2c2e);--acc:light-dark(#b38600,#ffd60a);--yel:#ffcc00;--bad:#ff3b30}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Anuphan,"Noto Sans Thai",-apple-system,system-ui,sans-serif;overflow-x:clip}
+button,label.b{font:inherit;cursor:pointer;border:0;background:none;color:var(--acc);min-height:44px;min-width:44px;padding:0 10px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-weight:500}
+button:focus-visible,label.b:focus-within{outline:3px solid var(--yel);outline-offset:1px}
+button:disabled{opacity:.35}
+label.b input,.hid{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.scr{display:none;min-height:100vh}.scr.on{display:block}
+.full{position:fixed;inset:0;display:none;grid-template-rows:auto 1fr auto;background:#000;color:#fff;z-index:10}.full.on{display:grid}
+.full button,.full label.b{color:#fff}.full .y{color:var(--yel)}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:max(env(safe-area-inset-top),8px) 8px 6px}
+.nav b{font-size:17px}
+/* home */
+#home h1{font-size:34px;line-height:1.05;margin:4px 0 14px;font-weight:700}
+#home .wrap{max-width:760px;margin:0 auto;padding:max(env(safe-area-inset-top),16px) 16px 120px}
+.list{background:var(--card);border-radius:12px;overflow:hidden}
+.it{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;padding:10px 6px 10px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+.it:last-child{border-bottom:0}
+.it img{width:52px;height:66px;object-fit:cover;border-radius:6px;border:1px solid var(--line);background:#fff}
+.it b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.it small{color:var(--mute);font-size:14px}
+.it button{color:var(--mute)}
+.empty{text-align:center;padding:60px 10px;color:var(--mute)}
+.empty svg{width:180px;height:auto;margin-bottom:16px}
+.empty h2{color:var(--ink);font-size:26px;line-height:1.15;margin:0 0 8px;text-wrap:balance}
+.fabs{position:fixed;left:0;right:0;bottom:max(env(safe-area-inset-bottom),20px);display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:0 12px}
+.fab{background:var(--yel);color:#111;border-radius:999px;padding:0 22px;min-height:56px;font-size:16px;font-weight:700;box-shadow:0 6px 20px #0003}
+.fab.fab2{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+#camLabel{font-size:16px}
+/* id preview */
+.idWrap{max-width:980px;margin:0 auto;padding:8px 16px 40px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,360px);gap:24px;align-items:start}
+.idPaper{background:light-dark(#e5e5ea,#111);border-radius:12px;padding:16px;display:grid;place-items:center}
+#a4cv{width:min(100%,520px);aspect-ratio:210/297;background:#fff;box-shadow:0 4px 18px #0003}
+.idCtl{display:grid;gap:16px}
+.grp{display:grid;gap:8px}
+.lbl{font-size:14px;color:var(--mute)}
+.rowb{display:flex;gap:8px;flex-wrap:wrap}
+.tg{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.tg[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.tg.sm{min-height:36px;font-size:14px;font-weight:400}
+.in{font:inherit;font-size:16px;min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:100%}
+.nm{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px}
+.sw{display:flex;align-items:center;gap:10px;font-weight:500;min-height:44px;cursor:pointer}
+.sw input{width:22px;height:22px;accent-color:#e0a800}
+.pdfBtn{background:var(--yel);color:#111;border-radius:999px;padding:0 22px;font-weight:700;flex:1}
+.pdfBtn.alt{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.layoutG{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.layoutG button{flex-direction:column;background:var(--bg);color:var(--ink);padding:12px;min-height:auto;gap:6px}
+.layoutG svg{width:70px;height:99px}
+@media(max-width:720px){.idWrap{grid-template-columns:minmax(0,1fr)}}
+/* camera */
+#cam .stage,#rev .stage{position:relative;touch-action:none;overflow:hidden}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%}
+#video{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+#hint{position:absolute;left:50%;top:16px;transform:translateX(-50%);background:#000a;padding:6px 14px;border-radius:999px;font-size:15px;white-space:nowrap}
+#hint:empty{display:none}
+.camBar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:12px 16px max(env(safe-area-inset-bottom),18px)}
+.shut{width:74px;height:74px;border-radius:50%;border:4px solid #fff;background:none;padding:0}
+.shut::after{content:"";display:block;width:60px;height:60px;border-radius:50%;background:#fff;margin:auto}
+.shut:active::after{transform:scale(.92)}
+.stack{justify-self:start;position:relative;width:52px;height:64px;padding:0}
+.stack img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:4px;border:2px solid #fff}
+.stack span{position:absolute;top:-8px;right:-8px;background:var(--yel);color:#000;border-radius:999px;font-size:13px;min-width:22px;height:22px;display:grid;place-items:center;font-weight:700}
+.camR{justify-self:end}
+.seg{display:flex;background:#ffffff22;border-radius:9px;padding:2px}
+.seg button{min-height:34px;font-size:14px;border-radius:7px;padding:0 10px}
+.seg button[aria-pressed=true]{background:#ffffff33}
+#noCam{position:absolute;inset:0;display:none;place-content:center;text-align:center;gap:14px;padding:24px}
+#noCam.on{display:grid}
+#noCam p{margin:0;color:#ccc;max-width:34ch}
+#noCam .b{background:var(--yel);color:#000!important;border-radius:12px;padding:0 20px;font-weight:700}
+#noCam .b2{border:1px solid #fff6;border-radius:12px;padding:0 20px}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .25s}
+#flash.on{opacity:.8;transition:none}
+/* review */
+.revBar{display:flex;justify-content:space-between;align-items:center;padding:10px 12px max(env(safe-area-inset-bottom),16px);gap:8px;flex-wrap:wrap}
+.revBar .mid{display:flex;gap:4px}
+.revBar .mid button{font-size:14px;color:#ddd}
+/* doc */
+#doc{background:var(--bg)}
+#doc .nav{position:sticky;top:0;background:var(--bg);z-index:2}
+#title{flex:1;font:inherit;font-weight:700;font-size:17px;text-align:center;border:0;background:none;color:var(--ink);min-height:44px;border-radius:8px}
+#title:focus{outline:2px solid var(--yel)}
+.pager{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;height:calc(100vh - 170px);scrollbar-width:none}
+.pager::-webkit-scrollbar{display:none}
+.slide{flex:0 0 100%;scroll-snap-align:center;display:grid;place-items:center;padding:12px 20px}
+.slide img{max-width:100%;max-height:100%;box-shadow:0 4px 18px #0003;background:#fff}
+#pnum{text-align:center;color:var(--mute);font-size:14px;height:22px}
+.tb{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;background:var(--card);border-top:1px solid var(--line);padding:6px 4px max(env(safe-area-inset-bottom),8px)}
+.tb button{flex-direction:column;gap:0;font-size:12px;padding:4px}
+.tb button.del{color:var(--bad)}
+/* sheets */
+.sheetBg{position:fixed;inset:0;background:#0006;display:none;align-items:flex-end;justify-content:center;z-index:40}
+.sheetBg.on{display:flex}
+.sheet{background:var(--card);color:var(--ink);width:min(520px,100%);border-radius:14px 14px 0 0;padding:16px 16px max(env(safe-area-inset-bottom),18px);display:grid;gap:10px}
+.sheet p{margin:0 0 4px;text-align:center;color:var(--mute);font-size:15px}
+.sheet button{background:var(--bg);width:100%;min-height:50px;border-radius:12px;font-size:17px}
+.sheet button.red{color:var(--bad)}
+.sheet button[aria-pressed=true]{outline:2px solid var(--acc)}
+.fxg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.fxg button{flex-direction:column;font-size:13px;padding:6px;min-height:auto}
+.fxg img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:6px;background:#fff}
+#busy{position:fixed;inset:0;background:#0007;display:none;place-items:center;z-index:60;color:#fff;font-size:17px}
+#busy.on{display:grid}
+#toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:#1c1c1e;color:#fff;padding:6px 6px 6px 16px;border-radius:12px;font-size:15px;display:none;align-items:center;gap:8px;z-index:70;max-width:92vw}
+#toast.on{display:flex}#toast button{color:var(--yel)}
+@media(prefers-reduced-motion:reduce){#flash{transition:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+<symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 2v16h16M2 6h16v16"/></symbol>
+<symbol id="i-fx" viewBox="0 0 24 24"><circle cx="9" cy="10" r="5"/><circle cx="15" cy="10" r="5"/><circle cx="12" cy="15" r="5"/></symbol>
+<symbol id="i-rot" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 3v5h5"/></symbol>
+<symbol id="i-del" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+<symbol id="i-id" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M5 16c.6-1.6 1.6-2.3 3-2.3s2.4.7 3 2.3M14 10h5M14 13h4"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-pdf" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
+<symbol id="i-img" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></symbol>
+</defs></svg>
+
+<!-- HOME -->
+<section id="home" class="scr on">
+  <div class="wrap">
+    <h1>เอกสารสแกน</h1>
+    <div id="docs"></div>
+  </div>
+  <div class="fabs"><button class="fab" id="newScan"><svg class="i"><use href="#i-cam"/></svg>สแกนเอกสาร</button><button class="fab fab2" id="newId"><svg class="i"><use href="#i-id"/></svg>ถ่ายบัตรประชาชน</button></div>
+</section>
+
+<!-- ID CARD PREVIEW -->
+<section id="idv" class="scr">
+  <div class="nav"><button id="idBack">‹ กลับ</button><b>สำเนาบัตรประชาชน</b><button id="idPdf"><svg class="i"><use href="#i-pdf"/></svg>PDF</button></div>
+  <div class="idWrap">
+    <div class="idPaper"><canvas id="a4cv" aria-label="ตัวอย่างกระดาษ A4"></canvas></div>
+    <div class="idCtl">
+      <div class="grp"><div class="lbl">ถ่ายใหม่</div><div class="rowb" id="retakes"></div></div>
+      <div class="grp"><div class="lbl">สีของบัตร</div><div class="rowb"><button class="tg" data-c="color">สี</button><button class="tg" data-c="gray">ขาวดำ</button></div></div>
+      <div class="grp"><label class="lbl" for="wm">ลายน้ำบนบัตร</label><input id="wm" class="in" placeholder="ใช้สำหรับสมัครงานเท่านั้น" maxlength="60">
+        <div class="rowb" id="wmPre"></div></div>
+      <div class="grp"><label class="sw"><input type="checkbox" id="cert" checked> ลายเซ็นรับรองสำเนา</label>
+        <div class="nm"><select id="pre" class="in" aria-label="คำนำหน้า"><option>นาย</option><option>นาง</option><option>นางสาว</option><option>เด็กชาย</option><option>เด็กหญิง</option><option value="">ไม่ระบุ</option></select><input id="nm" class="in" placeholder="ชื่อ นามสกุล" aria-label="ชื่อ นามสกุล"></div>
+        <div class="rowb" style="align-items:center"><span class="lbl">ขนาดตัวหนังสือ</span><button class="tg" id="fsDn" aria-label="ลดขนาดตัวหนังสือ">ก−</button><b id="fsV" style="min-width:56px;text-align:center">16 pt</b><button class="tg" id="fsUp" aria-label="เพิ่มขนาดตัวหนังสือ">ก+</button></div></div>
+      <div class="rowb"><button class="pdfBtn" id="idPdf2">บันทึก PDF</button><button class="pdfBtn alt" id="idJpg">บันทึกเป็นรูป</button></div>
+      <button class="tg" id="idKeep">เก็บในรายการเอกสาร</button>
+    </div>
+  </div>
+</section>
+
+<!-- CAMERA -->
+<section id="cam" class="full" aria-label="กล้องสแกน">
+  <div class="nav">
+    <button id="camCancel">ยกเลิก</button>
+    <b id="camLabel" hidden></b>
+    <div class="seg" id="seg" role="group" aria-label="โหมดถ่าย"><button data-m="auto" aria-pressed="true">อัตโนมัติ</button><button data-m="manual" aria-pressed="false">ด้วยตนเอง</button></div>
+    <button id="camFx" class="y">สี</button>
+  </div>
+  <div class="stage" id="camStage">
+    <video id="video" playsinline muted autoplay></video>
+    <canvas id="ccv"></canvas>
+    <div id="hint"></div>
+    <div id="flash"></div>
+    <div id="noCam">
+      <p>หน้านี้เปิดกล้องสดไม่ได้ ใช้กล้องของเครื่องถ่ายทีละหน้าแทนได้</p>
+      <label class="b"><input type="file" accept="image/*" capture="environment" class="pick">ถ่ายรูปเอกสาร</label>
+      <label class="b b2"><input type="file" accept="image/*" multiple class="pick">เลือกจากคลังรูป</label>
+    </div>
+  </div>
+  <div class="camBar">
+    <button class="stack" id="stack" aria-label="ดูหน้าที่สแกนแล้ว" hidden></button>
+    <button class="shut" id="shutter" aria-label="ถ่าย"></button>
+    <button class="camR y" id="camSave" disabled>บันทึก</button>
+  </div>
+</section>
+
+<!-- REVIEW / CROP -->
+<section id="rev" class="full" aria-label="ปรับขอบ">
+  <div class="nav"><span style="width:60px"></span><b id="revTitle">ลากมุมให้ตรงขอบ</b><span style="width:60px"></span></div>
+  <div class="stage" id="revStage"><canvas id="rcv"></canvas></div>
+  <div class="revBar">
+    <button id="revL">ถ่ายใหม่</button>
+    <div class="mid"><button id="revAuto">หาขอบ</button><button id="revFull">ทั้งภาพ</button></div>
+    <button id="revR" class="y">เก็บภาพสแกน</button>
+  </div>
+</section>
+
+<!-- DOCUMENT -->
+<section id="doc" class="scr">
+  <div class="nav">
+    <button id="docBack">‹ เอกสาร</button>
+    <input id="title" aria-label="ชื่อเอกสาร">
+    <button id="docPdf" aria-label="บันทึก PDF"><svg class="i"><use href="#i-pdf"/></svg>PDF</button>
+  </div>
+  <div class="pager" id="pager"></div>
+  <div id="pnum"></div>
+  <div class="tb">
+    <button id="tAdd"><svg class="i"><use href="#i-plus"/></svg>เพิ่มหน้า</button>
+    <button id="tCrop"><svg class="i"><use href="#i-crop"/></svg>ครอป</button>
+    <button id="tFx"><svg class="i"><use href="#i-fx"/></svg>ฟิลเตอร์</button>
+    <button id="tRot"><svg class="i"><use href="#i-rot"/></svg>หมุน</button>
+    <button id="tImg"><svg class="i"><use href="#i-img"/></svg>บันทึกรูป</button>
+    <button id="tDel" class="del"><svg class="i"><use href="#i-del"/></svg>ลบ</button>
+  </div>
+</section>
+
+<div class="sheetBg" id="sheetBg"><div class="sheet" id="sheet"></div></div>
+<div id="busy">กำลังประมวลผล…</div>
+<div id="toast" role="status"><span id="toastT"></span><button id="toastB" hidden>เลิกทำ</button></div>
+
+<script>
+{
+const $=s=>document.querySelector(s);
+const FX=[["color","สี"],["gray","ระดับสีเทา"],["bw","ขาวดำ"],["photo","ภาพถ่าย"]];
+const fxName=k=>(FX.find(f=>f[0]===k)||FX[0])[1];
+let docs=[],doc=null,session=[],sessionFx="color",mode="auto",stream=null,camOn=false,dl=null;
+const tick=()=>new Promise(r=>setTimeout(r,30));
+function busy(on){$("#busy").classList.toggle("on",on)}
+function toast(t,undo){const e=$("#toast");$("#toastT").textContent=t;const b=$("#toastB");b.hidden=!undo;b.onclick=()=>{e.classList.remove("on");undo()};e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("on"),undo?5000:2600)}
+function show(id){document.querySelectorAll(".scr,.full").forEach(s=>s.classList.toggle("on",s.id===id))}
+function sheet(html){$("#sheet").innerHTML=html;$("#sheetBg").classList.add("on")}
+function closeSheet(){$("#sheetBg").classList.remove("on")}
+$("#sheetBg").addEventListener("click",e=>{if(e.target.id==="sheetBg")closeSheet()});
+function ask(text,ok,cancel="ยกเลิก"){return new Promise(r=>{sheet(`<p>${text}</p><button class="red" id="aOk">${ok}</button><button id="aNo">${cancel}</button>`);$("#aOk").onclick=()=>{closeSheet();r(true)};$("#aNo").onclick=()=>{closeSheet();r(false)}})}
+const mk=(w,h)=>{const c=document.createElement("canvas");c.width=Math.max(1,Math.round(w));c.height=Math.max(1,Math.round(h));return c};
+
+// ---------- edge detection (largest bright region) ----------
+function detectQuad(el,W,H){
+  const k=Math.min(1,200/Math.max(W,H)),w=Math.max(4,Math.round(W*k)),h=Math.max(4,Math.round(H*k));
+  const c=mk(w,h),x=c.getContext("2d",{willReadFrequently:true});x.drawImage(el,0,0,w,h);
+  const d=x.getImageData(0,0,w,h).data,n=w*h,g=new Uint8Array(n),hist=new Array(256).fill(0);
+  for(let i=0;i<n;i++){const v=(d[i*4]*.299+d[i*4+1]*.587+d[i*4+2]*.114)|0;g[i]=v;hist[v]++}
+  let sum=0;for(let i=0;i<256;i++)sum+=i*hist[i];let sb=0,wb=0,best=0,t=128;
+  for(let i=0;i<256;i++){wb+=hist[i];if(!wb)continue;const wf=n-wb;if(!wf)break;sb+=i*hist[i];const v=wb*wf*(sb/wb-(sum-sb)/wf)**2;if(v>best){best=v;t=i}}
+  const lab=new Uint8Array(n),st=new Int32Array(n);let bestA=0,bq=null;
+  for(let s0=0;s0<n;s0++){if(lab[s0]||g[s0]<=t)continue;let sp=0,a=0;st[sp++]=s0;lab[s0]=1;
+    let tl=[0,0,1e9],tr=[0,0,-1e9],br=[0,0,-1e9],bl=[0,0,1e9];
+    while(sp){const p=st[--sp],px=p%w,py=(p/w)|0;a++;const s=px+py,df=px-py;
+      if(s<tl[2])tl=[px,py,s];if(s>br[2])br=[px,py,s];if(df>tr[2])tr=[px,py,df];if(df<bl[2])bl=[px,py,df];
+      if(px>0&&!lab[p-1]&&g[p-1]>t){lab[p-1]=1;st[sp++]=p-1}if(px<w-1&&!lab[p+1]&&g[p+1]>t){lab[p+1]=1;st[sp++]=p+1}
+      if(py>0&&!lab[p-w]&&g[p-w]>t){lab[p-w]=1;st[sp++]=p-w}if(py<h-1&&!lab[p+w]&&g[p+w]>t){lab[p+w]=1;st[sp++]=p+w}}
+    if(a>bestA){bestA=a;bq=[tl,tr,br,bl]}}
+  if(!bq)return null;const fr=bestA/n;if(fr<.1||fr>.96)return null;
+  const q=bq.map(p=>[p[0],p[1]]),qa=area(q);if(qa<bestA*.85||qa>bestA*1.3||!convex(q))return null;
+  return q.map(([a,b])=>[(a+.5)/k,(b+.5)/k]);
+}
+function area(q){let s=0;for(let i=0;i<4;i++){const a=q[i],b=q[(i+1)%4];s+=a[0]*b[1]-b[0]*a[1]}return Math.abs(s)/2}
+function convex(q){let sg=0;for(let i=0;i<4;i++){const a=q[i],b=q[(i+1)%4],c=q[(i+2)%4],z=(b[0]-a[0])*(c[1]-b[1])-(b[1]-a[1])*(c[0]-b[0]);if(!z)return false;const s=Math.sign(z);if(sg&&s!==sg)return false;sg=s}return true}
+const inset=(W,H,f)=>[[W*f,H*f],[W*(1-f),H*f],[W*(1-f),H*(1-f)],[W*f,H*(1-f)]];
+const quadFor=c=>detectQuad(c,c.width,c.height)||inset(c.width,c.height,.05);
+
+// ---------- warp / filters ----------
+function solve(A,b){const n=b.length;for(let i=0;i<n;i++){let m=i;for(let r=i+1;r<n;r++)if(Math.abs(A[r][i])>Math.abs(A[m][i]))m=r;[A[i],A[m]]=[A[m],A[i]];[b[i],b[m]]=[b[m],b[i]];for(let r=i+1;r<n;r++){const f=A[r][i]/A[i][i];for(let c=i;c<n;c++)A[r][c]-=f*A[i][c];b[r]-=f*b[i]}}const x=new Array(n);for(let i=n-1;i>=0;i--){let s=b[i];for(let c=i+1;c<n;c++)s-=A[i][c]*x[c];x[i]=s/A[i][i]}return x}
+function homog(f,t){const A=[],b=[];for(let i=0;i<4;i++){const[x,y]=f[i],[u,v]=t[i];A.push([x,y,1,0,0,0,-u*x,-u*y]);b.push(u);A.push([0,0,0,x,y,1,-v*x,-v*y]);b.push(v)}return[...solve(A,b),1]}
+const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+function warp(src,q){
+  let W=Math.max(dist(q[0],q[1]),dist(q[3],q[2])),H=Math.max(dist(q[0],q[3]),dist(q[1],q[2]));
+  const k=Math.min(1,2200/Math.max(W,H));W=Math.max(8,Math.round(W*k));H=Math.max(8,Math.round(H*k));
+  const h=homog([[0,0],[W,0],[W,H],[0,H]],q),sw=src.width,sh=src.height,sd=src.getContext("2d").getImageData(0,0,sw,sh).data;
+  const out=mk(W,H),oc=out.getContext("2d"),od=oc.createImageData(W,H),o=od.data;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const z=h[6]*x+h[7]*y+1,sx=(h[0]*x+h[1]*y+h[2])/z,sy=(h[3]*x+h[4]*y+h[5])/z;
+    const x0=Math.max(0,Math.min(sw-2,sx|0)),y0=Math.max(0,Math.min(sh-2,sy|0)),fx=Math.min(1,Math.max(0,sx-x0)),fy=Math.min(1,Math.max(0,sy-y0));
+    const i0=(y0*sw+x0)*4,i2=i0+sw*4,oi=(y*W+x)*4;
+    for(let c=0;c<3;c++){const a=sd[i0+c]+(sd[i0+4+c]-sd[i0+c])*fx,b=sd[i2+c]+(sd[i2+4+c]-sd[i2+c])*fx;o[oi+c]=a+(b-a)*fy}o[oi+3]=255}
+  oc.putImageData(od,0,0);return out;
+}
+function filter(c,fx){
+  if(fx==="photo")return c;
+  const W=c.width,H=c.height,id=c.getContext("2d").getImageData(0,0,W,H),d=id.data,n=W*H,g=new Uint8Array(n);
+  for(let i=0;i<n;i++)g[i]=(d[i*4]*.299+d[i*4+1]*.587+d[i*4+2]*.114)|0;
+  if(fx==="bw"){const I=new Float64Array((W+1)*(H+1));
+    for(let y=0;y<H;y++){let r=0;for(let X=0;X<W;X++){r+=g[y*W+X];I[(y+1)*(W+1)+X+1]=I[y*(W+1)+X+1]+r}}
+    const h2=Math.max(4,(W/32)|0);
+    for(let y=0;y<H;y++)for(let X=0;X<W;X++){const x1=Math.max(0,X-h2),x2=Math.min(W,X+h2),y1=Math.max(0,y-h2),y2=Math.min(H,y+h2);
+      const m=(I[y2*(W+1)+x2]-I[y1*(W+1)+x2]-I[y2*(W+1)+x1]+I[y1*(W+1)+x1])/((x2-x1)*(y2-y1)),v=g[y*W+X]<m*.86?0:255,i=(y*W+X)*4;d[i]=d[i+1]=d[i+2]=v}
+  }else{const hist=new Array(256).fill(0);for(let i=0;i<n;i++)hist[g[i]]++;
+    let lo=0,hi=255,a=0;for(;lo<255;lo++){a+=hist[lo];if(a>n*.02)break}a=0;for(;hi>0;hi--){a+=hist[hi];if(a>n*.04)break}
+    if(hi-lo<20){lo=0;hi=255}const sc=255/(hi-lo);
+    for(let i=0;i<n;i++){const j=i*4;if(fx==="gray"){d[j]=d[j+1]=d[j+2]=Math.min(255,Math.max(0,(g[i]-lo)*sc))}else for(let k=0;k<3;k++)d[j+k]=Math.min(255,Math.max(0,(d[j+k]-lo)*sc*1.05))}}
+  const out=mk(W,H);out.getContext("2d").putImageData(id,0,0);return out;
+}
+function rotate(c,r){r=((r%4)+4)%4;if(!r)return c;const o=mk(r%2?c.height:c.width,r%2?c.width:c.height),x=o.getContext("2d");x.translate(o.width/2,o.height/2);x.rotate(r*Math.PI/2);x.drawImage(c,-c.width/2,-c.height/2);return o}
+function scaled(c,M,q=.82){const k=Math.min(1,M/Math.max(c.width,c.height)),t=mk(c.width*k,c.height*k);t.getContext("2d").drawImage(c,0,0,t.width,t.height);return t.toDataURL("image/jpeg",q)}
+function render(p){if(!p.warped)p.warped=warp(p.src,p.quad);p.out=rotate(filter(p.warped,p.fx),p.rot);p.thumb=scaled(p.out,240);p.view=scaled(p.out,1500,.86)}
+function loadFile(f){return new Promise((res,rej)=>{const u=URL.createObjectURL(f),im=new Image();im.onload=()=>{const k=Math.min(1,2400/Math.max(im.naturalWidth,im.naturalHeight)),c=mk(im.naturalWidth*k,im.naturalHeight*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c)};im.onerror=()=>{URL.revokeObjectURL(u);rej()};im.src=u})}
+
+// ---------- storage (this browser only) ----------
+let idb=null;
+function openDb(){return new Promise(r=>{try{const q=indexedDB.open("scanner",1);q.onupgradeneeded=()=>q.result.createObjectStore("docs",{keyPath:"id"});q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)}catch{r(null)}})}
+const blobOf=(c,q=.88)=>new Promise(r=>c.toBlob(b=>r(b),"image/jpeg",q));
+async function persist(dc){if(!idb)return;try{const pages=[];for(const p of dc.pages){if(!p.srcBlob)p.srcBlob=await blobOf(p.src,.9);pages.push({src:p.srcBlob,out:await blobOf(p.out,.9),quad:p.quad,fx:p.fx,rot:p.rot})}
+  idb.transaction("docs","readwrite").objectStore("docs").put({id:dc.id,title:dc.title,date:dc.date,pages})}catch{}}
+function unpersist(id){try{idb&&idb.transaction("docs","readwrite").objectStore("docs").delete(id)}catch{}}
+async function blobCanvas(b){const bm=await createImageBitmap(b),c=mk(bm.width,bm.height);c.getContext("2d").drawImage(bm,0,0);return c}
+async function restore(){idb=await openDb();if(!idb)return;try{const all=await new Promise((r,j)=>{const q=idb.transaction("docs").objectStore("docs").getAll();q.onsuccess=()=>r(q.result);q.onerror=j});
+  for(const s of all.sort((a,b)=>b.date-a.date)){const pages=[];for(const p of s.pages){const src=await blobCanvas(p.src),out=await blobCanvas(p.out);pages.push({src,srcBlob:p.src,out,quad:p.quad,fx:p.fx,rot:p.rot,thumb:scaled(out,240),view:scaled(out,1500,.86)})}docs.push({id:s.id,title:s.title,date:s.date,pages})}
+  drawHome()}catch{}}
+
+// ---------- home ----------
+const fmt=t=>new Date(t).toLocaleString("th-TH",{day:"numeric",month:"short",year:"2-digit",hour:"2-digit",minute:"2-digit"});
+function drawHome(){
+  $("#docs").innerHTML=docs.length?`<div class="list">${docs.map((d,i)=>`<div class="it" data-o="${i}" role="button" tabindex="0"><img src="${d.pages[0].thumb}" alt=""><div><b>${esc(d.title)}</b><small>${fmt(d.date)} · ${d.pages.length} หน้า</small></div><button data-x="${i}" aria-label="ลบเอกสาร"><svg class="i"><use href="#i-del"/></svg></button></div>`).join("")}</div>`
+  :`<div class="empty"><svg viewBox="0 0 180 140" aria-hidden="true"><rect x="45" y="10" width="90" height="118" rx="6" fill="#fff" stroke="#c7c7cc"/><path d="M60 38h60M60 52h60M60 66h60M60 80h36" stroke="#c7c7cc" stroke-width="5" stroke-linecap="round"/><path d="M35 30V15h15M145 30V15h-15M35 110v15h15M145 110v15h-15" fill="none" stroke="#ffcc00" stroke-width="5" stroke-linecap="round"/></svg><h2>ยังไม่มีเอกสาร</h2><div>แตะ “สแกนเอกสาร” แล้วเล็งกล้องไปที่กระดาษ ระบบจะจับขอบและถ่ายให้เอง</div></div>`;
+}
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+$("#docs").addEventListener("click",async e=>{const x=e.target.closest("[data-x]");if(x){e.stopPropagation();const i=+x.dataset.x;if(await ask(`ลบ “${esc(docs[i].title)}” ?`,"ลบเอกสาร")){unpersist(docs[i].id);docs.splice(i,1);drawHome()}return}
+  const o=e.target.closest("[data-o]");if(o)openDoc(docs[+o.dataset.o])});
+$("#docs").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset.o!=null)e.target.click()});
+$("#newScan").onclick=()=>{doc=null;startCam()};
+
+// ---------- camera ----------
+const video=$("#video"),ccv=$("#ccv"),cctx=ccv.getContext("2d");
+let live=null,prevRaw=null,stable=0,lastDet=0,cool=0,camFit={k:1,ox:0,oy:0};
+let camKind="doc";
+function setSeg(){document.querySelectorAll("#seg button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.m===mode))}
+async function startCam(kind="doc"){
+  camKind=kind;if(kind==="doc"){session=[];updStack()}else $("#stack").hidden=true;
+  $("#camLabel").hidden=kind==="doc";$("#camFx").style.visibility=$("#camSave").style.visibility=kind==="doc"?"":"hidden";idLabel();setSeg();
+  show("cam");$("#noCam").classList.remove("on");$("#hint").textContent="";prevRaw=null;stable=0;
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1920},height:{ideal:1440}},audio:false});
+    video.srcObject=stream;await video.play();camOn=true;live=null;stable=0;requestAnimationFrame(loop)}
+  catch{stream=null;camOn=false;$("#noCam").classList.add("on");sizeCanvas(ccv);cctx.clearRect(0,0,ccv.width,ccv.height)}
+}
+function stopCam(){camOn=false;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.srcObject=null}
+function sizeCanvas(c){const dpr=devicePixelRatio||1,W=c.clientWidth,H=c.clientHeight;if(c.width!==Math.round(W*dpr)||c.height!==Math.round(H*dpr)){c.width=W*dpr;c.height=H*dpr}const x=c.getContext("2d");x.setTransform(dpr,0,0,dpr,0,0);return[W,H]}
+function loop(t){
+  if(!camOn)return;const vw=video.videoWidth,vh=video.videoHeight;
+  if(vw&&$("#cam").classList.contains("on")){
+    const[W,H]=sizeCanvas(ccv),k=Math.min(W/vw,H/vh);camFit={k,ox:(W-vw*k)/2,oy:(H-vh*k)/2};
+    cctx.fillStyle="#000";cctx.fillRect(0,0,W,H);cctx.drawImage(video,camFit.ox,camFit.oy,vw*k,vh*k);
+    if(camKind==="id"){idFrame(t,W,H,k,vw,vh);requestAnimationFrame(loop);return}
+    if(t-lastDet>110){lastDet=t;const q=detectQuad(video,vw,vh);
+      if(q){const mv=prevRaw?Math.max(...q.map((p,i)=>dist(p,prevRaw[i])))/Math.max(vw,vh):1;stable=mv<.02?stable+1:0;prevRaw=q;live=live?live.map((p,i)=>[p[0]+(q[i][0]-p[0])*.55,p[1]+(q[i][1]-p[1])*.55]):q}
+      else{live=null;prevRaw=null;stable=0}
+      $("#hint").textContent=!live?"กำลังค้นหาเอกสาร…":mode==="auto"?(stable>2?"ถือกล้องให้นิ่ง…":"เล็งให้เห็นกระดาษทั้งแผ่น"):"";
+      if(mode==="auto"&&live&&stable>=9&&t>cool){cool=t+1800;stable=0;capture()}}
+    if(live){const P=live.map(([x,y])=>[camFit.ox+x*k,camFit.oy+y*k]);cctx.beginPath();cctx.moveTo(...P[0]);P.slice(1).forEach(p=>cctx.lineTo(...p));cctx.closePath();
+      cctx.fillStyle="rgba(255,204,0,.28)";cctx.fill();cctx.strokeStyle="#ffcc00";cctx.lineWidth=3;cctx.stroke()}}
+  requestAnimationFrame(loop);
+}
+function grabFrame(){const vw=video.videoWidth,vh=video.videoHeight,k=Math.min(1,2400/Math.max(vw,vh)),c=mk(vw*k,vh*k);c.getContext("2d").drawImage(video,0,0,c.width,c.height);return{c,k}}
+async function capture(){
+  if(!camOn||!video.videoWidth)return;const{c,k}=grabFrame();const q=live?live.map(([x,y])=>[x*k,y*k]):inset(c.width,c.height,.05);
+  const f=$("#flash");f.classList.add("on");requestAnimationFrame(()=>requestAnimationFrame(()=>f.classList.remove("on")));
+  const p={src:c,quad:q,fx:sessionFx,rot:0};
+  if(mode==="auto"&&live){render(p);session.push(p);updStack()}else openReview(p,"new");
+}
+$("#shutter").onclick=()=>{if(!camOn)document.querySelector("#noCam input").click();else if(camKind==="id")idCapture();else capture()};
+document.querySelectorAll("#seg button").forEach(b=>b.onclick=()=>{mode=b.dataset.m;setSeg();stable=0});
+$("#camFx").onclick=()=>{const i=FX.findIndex(f=>f[0]===sessionFx);sessionFx=FX[(i+1)%FX.length][0];$("#camFx").textContent=fxName(sessionFx)};
+function updStack(){const s=$("#stack");s.hidden=!session.length;$("#camSave").disabled=!session.length;$("#camSave").textContent=session.length?`บันทึก (${session.length})`:"บันทึก";
+  if(session.length)s.innerHTML=`<img src="${session[session.length-1].thumb}" alt=""><span>${session.length}</span>`}
+$("#stack").onclick=()=>finishScan();
+$("#camSave").onclick=()=>finishScan();
+$("#camCancel").onclick=async()=>{if(camKind==="id"){stopCam();if(idS.retake){idS.retake=false;openIdv()}else show("home");return}
+  if(session.length&&!await ask(`ทิ้งภาพสแกน ${session.length} หน้า?`,"ทิ้งภาพสแกน","เก็บไว้"))return;stopCam();session=[];doc?openDoc(doc):show("home")};
+document.querySelectorAll(".pick").forEach(inp=>inp.addEventListener("change",async e=>{
+  const files=[...e.target.files];e.target.value="";if(!files.length)return;busy(true);const cs=[];
+  for(const f of (camKind==="id"?files.slice(0,1):files)){try{cs.push(await loadFile(f))}catch{toast("เปิดไฟล์ไม่ได้: "+f.name)}}
+  if(!cs.length){busy(false);return}
+  if(camKind==="id"){busy(false);openReview({src:cs[0],quad:quadFor(cs[0]),fx:"photo",rot:0},"id");return}
+  if(cs.length===1){busy(false);openReview({src:cs[0],quad:quadFor(cs[0]),fx:sessionFx,rot:0},"new");return}
+  await tick();for(const c of cs){const p={src:c,quad:quadFor(c),fx:sessionFx,rot:0};render(p);session.push(p)}busy(false);updStack();
+}));
+async function finishScan(){if(!session.length)return;stopCam();
+  if(!doc){doc={id:Date.now().toString(36),title:"เอกสารสแกน "+new Date().toLocaleDateString("th-TH",{day:"numeric",month:"short"}),date:Date.now(),pages:[]};docs.unshift(doc)}
+  const start=doc.pages.length;doc.pages.push(...session);session=[];persist(doc);drawHome();openDoc(doc,start)}
+
+// ---------- review / crop ----------
+const rcv=$("#rcv"),rctx=rcv.getContext("2d");let rp=null,rmode="new",rfit={k:1,ox:0,oy:0},drag=-1,editPage=null;
+function openReview(p,m){rp=p;rmode=m;if(m!=="edit")camOn=false;show("rev");
+  $("#revL").textContent=m==="edit"?"ยกเลิก":"ถ่ายใหม่";$("#revR").textContent=m==="new"?"เก็บภาพสแกน":m==="id"?"ใช้ภาพนี้":"เสร็จ";requestAnimationFrame(paintRev)}
+function paintRev(){if(!rp)return;const[W,H]=sizeCanvas(rcv),img=rp.src,k=Math.min((W-56)/img.width,(H-56)/img.height);rfit={k,ox:(W-img.width*k)/2,oy:(H-img.height*k)/2};
+  rctx.clearRect(0,0,W,H);rctx.drawImage(img,rfit.ox,rfit.oy,img.width*k,img.height*k);
+  const P=rp.quad.map(([x,y])=>[rfit.ox+x*k,rfit.oy+y*k]),path=()=>{rctx.beginPath();rctx.moveTo(...P[0]);P.slice(1).forEach(p=>rctx.lineTo(...p));rctx.closePath()};
+  rctx.fillStyle="#0009";rctx.beginPath();rctx.rect(rfit.ox,rfit.oy,img.width*k,img.height*k);rctx.moveTo(...P[0]);P.slice(1).forEach(p=>rctx.lineTo(...p));rctx.closePath();rctx.fill("evenodd");
+  path();rctx.strokeStyle="#ffcc00";rctx.lineWidth=2.5;rctx.stroke();
+  P.forEach((p,i)=>{rctx.beginPath();rctx.arc(p[0],p[1],drag===i?16:12,0,7);rctx.fillStyle=drag===i?"#ffcc00":"#ffffffdd";rctx.fill();rctx.lineWidth=3;rctx.strokeStyle="#ffcc00";rctx.stroke()});
+  if(drag>=0){const[px]=P[drag],[sx,sy]=rp.quad[drag],R=58,lx=px<W/2?W-R-14:R+14,ly=R+14,sr=R/(k*2.5);
+    rctx.save();rctx.beginPath();rctx.arc(lx,ly,R,0,7);rctx.clip();rctx.fillStyle="#000";rctx.fillRect(lx-R,ly-R,2*R,2*R);rctx.drawImage(img,sx-sr,sy-sr,2*sr,2*sr,lx-R,ly-R,2*R,2*R);rctx.restore();
+    rctx.beginPath();rctx.arc(lx,ly,R,0,7);rctx.strokeStyle="#fff";rctx.lineWidth=3;rctx.stroke();rctx.strokeStyle="#ffcc00";rctx.lineWidth=2;rctx.beginPath();rctx.moveTo(lx-12,ly);rctx.lineTo(lx+12,ly);rctx.moveTo(lx,ly-12);rctx.lineTo(lx,ly+12);rctx.stroke()}}
+new ResizeObserver(()=>{if($("#rev").classList.contains("on"))paintRev()}).observe($("#revStage"));
+const rpos=e=>{const r=rcv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
+rcv.addEventListener("pointerdown",e=>{const[x,y]=rpos(e);let bi=-1,bd=60;rp.quad.forEach(([qx,qy],i)=>{const d=Math.hypot(rfit.ox+qx*rfit.k-x,rfit.oy+qy*rfit.k-y);if(d<bd){bd=d;bi=i}});if(bi<0)return;drag=bi;rcv.setPointerCapture(e.pointerId);paintRev()});
+rcv.addEventListener("pointermove",e=>{if(drag<0)return;const[x,y]=rpos(e);rp.quad[drag]=[Math.max(0,Math.min(rp.src.width,(x-rfit.ox)/rfit.k)),Math.max(0,Math.min(rp.src.height,(y-rfit.oy)/rfit.k))];paintRev()});
+const rup=()=>{if(drag<0)return;drag=-1;paintRev()};rcv.addEventListener("pointerup",rup);rcv.addEventListener("pointercancel",rup);
+$("#revAuto").onclick=()=>{const q=detectQuad(rp.src,rp.src.width,rp.src.height);if(q){rp.quad=q;paintRev()}else toast("หาขอบไม่เจอ ลากมุมเองได้เลย")};
+$("#revFull").onclick=()=>{rp.quad=inset(rp.src.width,rp.src.height,0);paintRev()};
+function backToCam(){show("cam");if(stream){camOn=true;requestAnimationFrame(loop)}}
+$("#revL").onclick=()=>{const m=rmode;rp=null;if(m==="edit")openDoc(doc,cur);else backToCam()};
+$("#revR").onclick=async()=>{busy(true);await tick();
+  if(rmode==="id"){const card=cardFrom(rp.src,rp.quad);rp=null;busy(false);show("cam");idStore(card);return}
+  rp.warped=null;render(rp);busy(false);
+  if(rmode==="new"){session.push(rp);rp=null;updStack();backToCam()}
+  else{Object.assign(editPage,{quad:rp.quad,warped:rp.warped,out:rp.out,thumb:rp.thumb,view:rp.view});rp=null;persist(doc);openDoc(doc,cur)}};
+
+// ---------- document view ----------
+let cur=0;const pager=$("#pager");
+function openDoc(d,at=0){doc=d;show("doc");$("#title").value=d.title;drawPages();requestAnimationFrame(()=>{pager.scrollLeft=at*pager.clientWidth;cur=at;pnum()})}
+function drawPages(){pager.innerHTML=doc.pages.map((p,i)=>`<div class="slide"><img src="${p.view}" alt="หน้า ${i+1}"></div>`).join("");pnum()}
+function pnum(){$("#pnum").textContent=doc&&doc.pages.length?`${cur+1} / ${doc.pages.length}`:""}
+pager.addEventListener("scroll",()=>{const i=Math.round(pager.scrollLeft/Math.max(1,pager.clientWidth));if(i!==cur){cur=i;pnum()}},{passive:true});
+$("#title").addEventListener("change",()=>{doc.title=$("#title").value.trim()||"เอกสารสแกน";persist(doc);drawHome()});
+$("#docBack").onclick=()=>{drawHome();show("home")};
+$("#tAdd").onclick=()=>startCam();
+$("#tCrop").onclick=()=>{const p=doc.pages[cur];if(!p)return;editPage=p;openReview({src:p.src,quad:p.quad.map(q=>[...q]),fx:p.fx,rot:p.rot},"edit")};
+$("#tRot").onclick=async()=>{const p=doc.pages[cur];if(!p)return;busy(true);await tick();p.rot++;render(p);busy(false);drawPages();pager.scrollLeft=cur*pager.clientWidth;persist(doc)};
+$("#tFx").onclick=async()=>{const p=doc.pages[cur];if(!p)return;busy(true);await tick();if(!p.warped)p.warped=warp(p.src,p.quad);
+  const small=mk(1,1);const k=Math.min(1,260/Math.max(p.warped.width,p.warped.height)),sw=mk(p.warped.width*k,p.warped.height*k);sw.getContext("2d").drawImage(p.warped,0,0,sw.width,sw.height);
+  const prev=FX.map(([f])=>rotate(filter(sw,f),p.rot).toDataURL("image/jpeg",.8));busy(false);
+  sheet(`<p>ฟิลเตอร์</p><div class="fxg">${FX.map(([f,t],i)=>`<button data-f="${f}" aria-pressed="${p.fx===f}"><img src="${prev[i]}" alt="">${t}</button>`).join("")}</div><button id="fxAll">ใช้กับทุกหน้า</button><button id="fxClose">เสร็จ</button>`);
+  $("#sheet").querySelectorAll("[data-f]").forEach(b=>b.onclick=async()=>{p.fx=b.dataset.f;$("#sheet").querySelectorAll("[data-f]").forEach(x=>x.setAttribute("aria-pressed",x===b));busy(true);await tick();render(p);busy(false);drawPages();pager.scrollLeft=cur*pager.clientWidth;persist(doc)});
+  $("#fxAll").onclick=async()=>{closeSheet();busy(true);await tick();for(const q of doc.pages){q.fx=p.fx;render(q)}busy(false);drawPages();pager.scrollLeft=cur*pager.clientWidth;persist(doc);toast("ใช้ฟิลเตอร์ “"+fxName(p.fx)+"” กับทุกหน้าแล้ว")};
+  $("#fxClose").onclick=closeSheet};
+$("#tDel").onclick=async()=>{const p=doc.pages[cur];if(!p)return;
+  if(doc.pages.length===1){if(await ask("ลบหน้าสุดท้ายจะลบทั้งเอกสาร","ลบเอกสาร")){unpersist(doc.id);docs=docs.filter(d=>d!==doc);doc=null;drawHome();show("home")}return}
+  const i=cur,d=doc;d.pages.splice(i,1);cur=Math.min(i,d.pages.length-1);drawPages();pager.scrollLeft=cur*pager.clientWidth;persist(d);drawHome();
+  toast("ลบหน้าแล้ว",()=>{d.pages.splice(i,0,p);persist(d);drawHome();if(doc===d)openDoc(d,i)})};
+
+// ---------- ID card ----------
+const CARD_W=85.6,CARD_H=54,GAP=20,DPI=200,MM=DPI/25.4;
+const WM_PRE=["ใช้สำหรับสมัครงานเท่านั้น","ใช้สำหรับยืนยันตัวตนเท่านั้น","ใช้สำหรับเปิดบัญชีธนาคารเท่านั้น","ใช้สำหรับติดต่อราชการเท่านั้น"];
+let idS={layout:2,step:0,cards:[],gray:[],retake:false,color:"color"},idQuad=null;
+const prefs=(()=>{try{return JSON.parse(localStorage.getItem("idPrefs"))||{}}catch{return{}}})();
+let fs=prefs.fs||16;
+function savePrefs(){try{localStorage.setItem("idPrefs",JSON.stringify({wm:$("#wm").value,cert:$("#cert").checked,pre:$("#pre").value,nm:$("#nm").value,fs}))}catch{}}
+const tops=()=>idS.layout===1?[(297-CARD_H)/2]:[(297-CARD_H*2-GAP)/2,(297-CARD_H*2-GAP)/2+CARD_H+GAP];
+function miniA4(n){const t=n===1?[(297-54)/2]:[84.5,158.5];return`<svg viewBox="0 0 210 297" aria-hidden="true"><rect x="1" y="1" width="208" height="295" fill="#fff" stroke="#c7c7cc" stroke-width="2"/>${t.map(y=>`<rect x="62.2" y="${y}" width="85.6" height="54" rx="4" fill="#fff8d6" stroke="#e0a800" stroke-width="3" stroke-dasharray="8 5"/>`).join("")}</svg>`}
+$("#newId").onclick=()=>{
+  sheet(`<p>รูปแบบบนกระดาษ A4</p><div class="layoutG"><button data-l="1">${miniA4(1)}1 กรอบ</button><button data-l="2">${miniA4(2)}2 กรอบ (หน้า + หลัง)</button></div>
+  <p>วิธีถ่าย</p><div class="layoutG"><button data-md="auto">อัตโนมัติ</button><button data-md="manual">กดถ่ายเอง</button></div>
+  <button id="idGo" style="background:var(--yel);color:#111;font-weight:700">เริ่มถ่าย</button><button id="idX">ยกเลิก</button>`);
+  const sync=()=>{$("#sheet").querySelectorAll("[data-l]").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.l===idS.layout));$("#sheet").querySelectorAll("[data-md]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.md===mode))};sync();
+  $("#sheet").querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>{idS.layout=+b.dataset.l;sync()});
+  $("#sheet").querySelectorAll("[data-md]").forEach(b=>b.onclick=()=>{mode=b.dataset.md;sync()});
+  $("#idX").onclick=closeSheet;
+  $("#idGo").onclick=()=>{closeSheet();idS={...idS,step:0,cards:[],gray:[],retake:false};startCam("id")};
+};
+function idLabel(){$("#camLabel").textContent=idS.layout===1?"บัตรประชาชน":idS.step===0?"ด้านหน้า · 1/2":"ด้านหลัง · 2/2"}
+function guideRect(W,H){const gw=Math.min(W*.86,H*.6*CARD_W/CARD_H),gh=gw*CARD_H/CARD_W;return{x:(W-gw)/2,y:(H-gh)/2,w:gw,h:gh}}
+function idFrame(t,W,H,k,vw,vh){
+  const g=guideRect(W,H),vr={x:(g.x-camFit.ox)/k,y:(g.y-camFit.oy)/k,w:g.w/k,h:g.h/k};
+  if(t-lastDet>110){lastDet=t;const m=.12,sx=Math.max(0,vr.x-vr.w*m),sy=Math.max(0,vr.y-vr.h*m),sw=Math.min(vw-sx,vr.w*(1+2*m)),sh=Math.min(vh-sy,vr.h*(1+2*m));
+    const c=mk(200,200*sh/sw);c.getContext("2d").drawImage(video,sx,sy,sw,sh,0,0,c.width,c.height);
+    const q=detectQuad(c,c.width,c.height),ok=q&&area(q)/(c.width*c.height)>.35;
+    if(ok){const mv=prevRaw?Math.max(...q.map((p,i)=>dist(p,prevRaw[i])))/c.width:1;stable=mv<.02?stable+1:0;prevRaw=q;idQuad={q,sx,sy,sw,sh,cw:c.width}}
+    else{stable=0;prevRaw=null;idQuad=null}
+    $("#hint").textContent=!idQuad?"วางบัตรให้พอดีกรอบ":mode==="auto"?"ถือนิ่ง… กำลังถ่าย":"พร้อมแล้ว กดถ่ายได้";
+    if(mode==="auto"&&idQuad&&stable>=9&&t>cool){cool=t+1500;stable=0;idCapture()}}
+  cctx.fillStyle="rgba(0,0,0,.55)";cctx.beginPath();cctx.rect(0,0,W,H);cctx.roundRect(g.x,g.y,g.w,g.h,10);cctx.fill("evenodd");
+  cctx.strokeStyle=idQuad?"#ffcc00":"#ffffff";cctx.lineWidth=3;cctx.beginPath();cctx.roundRect(g.x,g.y,g.w,g.h,10);cctx.stroke();
+  if(mode==="auto"&&idQuad){const bw=140,bx=(W-bw)/2,by=g.y+g.h+28;cctx.fillStyle="#ffffff40";cctx.fillRect(bx,by,bw,5);cctx.fillStyle="#ffcc00";cctx.fillRect(bx,by,bw*Math.min(1,stable/9),5)}
+}
+function cardFrom(src,q){let w=warp(src,q);if(w.height>w.width)w=rotate(w,1);const o=mk(Math.round(CARD_W*MM*1.5),Math.round(CARD_H*MM*1.5));o.getContext("2d").drawImage(w,0,0,o.width,o.height);return o}
+function idCapture(){
+  if(!camOn||!video.videoWidth)return;const{c,k}=grabFrame();let q;
+  if(idQuad){const{q:s,sx,sy,sw,cw}=idQuad,f=sw/cw;q=s.map(([x,y])=>[(sx+x*f)*k,(sy+y*f)*k])}
+  else{const[W,H]=[ccv.clientWidth,ccv.clientHeight],g=guideRect(W,H),kk=camFit.k,x=(g.x-camFit.ox)/kk*k,y=(g.y-camFit.oy)/kk*k,w=g.w/kk*k,h=g.h/kk*k;q=[[x,y],[x+w,y],[x+w,y+h],[x,y+h]]}
+  const f=$("#flash");f.classList.add("on");requestAnimationFrame(()=>requestAnimationFrame(()=>f.classList.remove("on")));
+  idStore(cardFrom(c,q));
+}
+function idStore(card){
+  const i=idS.step;idS.cards[i]=filter(card,"color");idS.gray[i]=null;prevRaw=null;stable=0;idQuad=null;
+  if(idS.retake){idS.retake=false;stopCam();openIdv();return}
+  idS.step++;if(idS.step>=idS.layout){stopCam();openIdv()}else{idLabel();toast("ได้ด้านหน้าแล้ว ต่อด้วยด้านหลัง");if(stream){camOn=true;requestAnimationFrame(loop)}}
+}
+function openIdv(){show("idv");
+  $("#retakes").innerHTML=(idS.layout===1?["บัตร"]:["ด้านหน้า","ด้านหลัง"]).map((t,i)=>`<button class="tg sm" data-rt="${i}">${t}</button>`).join("");
+  $("#wmPre").innerHTML=WM_PRE.map(t=>`<button class="tg sm" data-wp="${t}">${t}</button>`).join("");
+  document.querySelectorAll("[data-c]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.c===idS.color));
+  renderA4();
+}
+$("#wm").value=prefs.wm||"";$("#cert").checked=prefs.cert!==false;$("#pre").value=prefs.pre??"นาย";$("#nm").value=prefs.nm||"";$("#fsV").textContent=fs+" pt";
+$("#retakes").addEventListener("click",e=>{const b=e.target.closest("[data-rt]");if(!b)return;idS.step=+b.dataset.rt;idS.retake=true;startCam("id")});
+$("#wmPre").addEventListener("click",e=>{const b=e.target.closest("[data-wp]");if(!b)return;$("#wm").value=b.dataset.wp;savePrefs();renderA4()});
+document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{idS.color=b.dataset.c;document.querySelectorAll("[data-c]").forEach(x=>x.setAttribute("aria-pressed",x===b));renderA4()});
+let rT;["wm","nm","pre","cert"].forEach(id=>$("#"+id).addEventListener(id==="cert"||id==="pre"?"change":"input",()=>{savePrefs();clearTimeout(rT);rT=setTimeout(renderA4,150)}));
+$("#fsDn").onclick=()=>{fs=Math.max(10,fs-1);$("#fsV").textContent=fs+" pt";savePrefs();renderA4()};
+$("#fsUp").onclick=()=>{fs=Math.min(32,fs+1);$("#fsV").textContent=fs+" pt";savePrefs();renderA4()};
+const FONT='Anuphan,"Noto Sans Thai",sans-serif';
+async function renderA4(){
+  try{await Promise.all([document.fonts.load(`400 40px Anuphan`,"สำเนาถูกต้อง"),document.fonts.load(`700 40px Anuphan`,"ใช้สำหรับ")])}catch{}
+  const cv=$("#a4cv"),W=Math.round(210*MM),H=Math.round(297*MM);cv.width=W;cv.height=H;const x=cv.getContext("2d");
+  x.fillStyle="#fff";x.fillRect(0,0,W,H);
+  const cw=CARD_W*MM,ch=CARD_H*MM,cx=(W-cw)/2,T=tops(),wm=$("#wm").value.trim(),r=3.2*MM;
+  T.forEach((tp,i)=>{const y=tp*MM;let card=idS.cards[i];
+    if(card){if(idS.color==="gray"){if(!idS.gray[i])idS.gray[i]=filter(card,"gray");card=idS.gray[i]}
+      x.save();x.beginPath();x.roundRect(cx,y,cw,ch,r);x.clip();x.drawImage(card,cx,y,cw,ch);
+      if(wm){x.translate(cx+cw/2,y+ch/2);x.rotate(-16*Math.PI/180);let s=ch*.17;x.font=`700 ${s}px ${FONT}`;while(x.measureText(wm).width>cw*.98&&s>8){s-=2;x.font=`700 ${s}px ${FONT}`}
+        x.textAlign="center";x.textBaseline="middle";x.fillStyle="rgba(25,55,160,.6)";x.fillText(wm,0,0)}
+      x.restore();x.strokeStyle="#cfcfcf";x.lineWidth=1.5;x.beginPath();x.roundRect(cx,y,cw,ch,r);x.stroke()}
+    else{x.setLineDash([18,12]);x.strokeStyle="#e0a800";x.lineWidth=4;x.beginPath();x.roundRect(cx,y,cw,ch,r);x.stroke();x.setLineDash([]);
+      x.fillStyle="#b38600";x.font=`400 ${5*MM}px ${FONT}`;x.textAlign="center";x.textBaseline="middle";x.fillText(idS.layout===2?(i?"ด้านหลัง":"ด้านหน้า"):"บัตรประชาชน",W/2,y+ch/2)}});
+  if($("#cert").checked){
+    const px=fs/72*25.4*MM,lh=px*1.6,base=(T[T.length-1]+CARD_H)*MM+10*MM+px;
+    const nm=$("#nm").value.trim(),line=nm?`(${$("#pre").value}${nm})`:"(..................................................)";
+    x.fillStyle="#111";x.textAlign="center";x.textBaseline="alphabetic";x.font=`400 ${px}px ${FONT}`;
+    x.fillText("สำเนาถูกต้อง",W/2,base);x.fillText(line,W/2,base+lh*2.4)}
+}
+$("#idBack").onclick=()=>show("home");
+const idName=()=>{const n=$("#nm").value.trim();return"สำเนาบัตรประชาชน"+(n?" "+n:"")};
+async function idSavePdf(){busy(true);await tick();await renderA4();const b=await makePdf([{out:$("#a4cv")}]);busy(false);if(await save(idName().replace(/[\\/:*?"<>|]/g,"-")+".pdf",b))toast("บันทึก PDF แล้ว")}
+$("#idPdf").onclick=idSavePdf;$("#idPdf2").onclick=idSavePdf;
+$("#idJpg").onclick=async()=>{await renderA4();const b=await blobOf($("#a4cv"),.92);if(await save(idName().replace(/[\\/:*?"<>|]/g,"-")+".jpg",b))toast("บันทึกรูปแล้ว")};
+$("#idKeep").onclick=async()=>{await renderA4();const s=$("#a4cv"),c=mk(s.width,s.height);c.getContext("2d").drawImage(s,0,0);
+  const p={src:c,quad:inset(c.width,c.height,0),fx:"photo",rot:0,warped:c,out:c,thumb:scaled(c,240),view:scaled(c,1500,.86)};
+  const d={id:Date.now().toString(36),title:idName(),date:Date.now(),pages:[p]};docs.unshift(d);persist(d);drawHome();toast("เก็บในรายการเอกสารแล้ว");openDoc(d)};
+
+// ---------- export ----------
+async function makePdf(pages){
+  const enc=new TextEncoder(),parts=[],offs=[];let len=0;const push=x=>{const u=typeof x==="string"?enc.encode(x):x;parts.push(u);len+=u.length};
+  const obj=(n,f)=>{offs[n]=len;push(`${n} 0 obj\n`);f();push("\nendobj\n")};
+  push("%PDF-1.4\n");const N=pages.length;
+  obj(1,()=>push("<< /Type /Catalog /Pages 2 0 R >>"));
+  obj(2,()=>push(`<< /Type /Pages /Count ${N} /Kids [${pages.map((_,i)=>`${3+i*3} 0 R`).join(" ")}] >>`));
+  for(let i=0;i<N;i++){const c=pages[i].out,jpg=new Uint8Array(await (await blobOf(c,.85)).arrayBuffer()),pw=595.28,ph=+(pw*c.height/c.width).toFixed(2),pn=3+i*3,cs=`q ${pw} 0 0 ${ph} 0 0 cm /Im0 Do Q`;
+    obj(pn,()=>push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Resources << /XObject << /Im0 ${pn+1} 0 R >> >> /Contents ${pn+2} 0 R >>`));
+    obj(pn+1,()=>{push(`<< /Type /XObject /Subtype /Image /Width ${c.width} /Height ${c.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpg.length} >>\nstream\n`);push(jpg);push("\nendstream")});
+    obj(pn+2,()=>push(`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`))}
+  const total=3+N*3,xref=len;let x=`xref\n0 ${total}\n0000000000 65535 f \n`;for(let n=1;n<total;n++)x+=String(offs[n]).padStart(10,"0")+" 00000 n \n";
+  push(x+`trailer\n<< /Size ${total} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);return new Blob(parts,{type:"application/pdf"})}
+const fname=()=>(doc.title||"เอกสารสแกน").replace(/[\\/:*?"<>|]/g,"-");
+async function save(filename,data){
+  if(!dl){const type=filename.endsWith(".pdf")?"application/pdf":"image/jpeg",blob=data instanceof Blob?data:new Blob([data],{type});
+    try{const file=new File([blob],filename,{type});
+      if(/iPhone|iPad|Android/i.test(navigator.userAgent)&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file]});return true}}
+    catch(e){if(e&&e.name==="AbortError"){toast("ยกเลิกการบันทึก");return false}}
+    try{const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);return true}
+    catch{toast("บันทึกไม่สำเร็จ");return false}}
+  try{await dl.save({filename,data});return true}catch(e){const c=e&&e.code;toast(c==="declined"?"ยกเลิกการบันทึก":c==="rate_limited"?"มีหน้าต่างยืนยันเปิดอยู่":"บันทึกไม่สำเร็จ");return false}}
+$("#docPdf").onclick=async()=>{busy(true);await tick();const b=await makePdf(doc.pages);busy(false);if(await save(fname()+".pdf",b))toast("บันทึก PDF แล้ว")};
+$("#tImg").onclick=async()=>{const p=doc.pages[cur];if(p&&await save(`${fname()}-${cur+1}.jpg`,await blobOf(p.out,.92)))toast("บันทึกรูปแล้ว")};
+
+drawHome();restore();
+if(window.claude&&claude.use)claude.use("downloads").then(d=>{dl=d}).catch(()=>{});
+}
+</script>
+</body>
+</html>
