@@ -49,6 +49,9 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .tip{font-size:14px;color:var(--mute);background:var(--card);border-radius:10px;padding:10px 12px}
 .dot{width:40px;height:40px;min-width:40px;border-radius:50%;padding:0;background:var(--d);border:3px solid var(--card);box-shadow:0 0 0 1px var(--line)}
 .dot[aria-pressed=true]{box-shadow:0 0 0 2px var(--acc)}
+.rot{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto 48px;gap:8px;align-items:center}
+.rot input{width:100%;accent-color:#e0a800;height:32px}
+.rot b{text-align:right}
 .cardRow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .cardRow img{width:64px;height:40px;object-fit:cover;border-radius:4px;border:1px solid var(--line)}
 .cardRow span{min-width:70px}
@@ -163,11 +166,14 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
         <div class="rowb" id="wmPre"></div>
         <div class="rowb" style="align-items:center"><span class="lbl">สี</span><button class="dot" data-wc="red" aria-label="แดง" style="--d:#d42020"></button><button class="dot" data-wc="black" aria-label="ดำ" style="--d:#1a1a1a"></button><button class="dot" data-wc="blue" aria-label="น้ำเงิน" style="--d:#1f3fae"></button>
           <span class="lbl" style="margin-left:8px">ขนาด</span><button class="tg" id="wsDn" aria-label="ลดขนาดลายน้ำ">ก−</button><button class="tg" id="wsUp" aria-label="เพิ่มขนาดลายน้ำ">ก+</button></div>
-        <div class="rowb"><button class="tg sm" id="wRotL">↺ เอียงซ้าย</button><button class="tg sm" id="wRotR">↻ เอียงขวา</button><button class="tg sm" id="wReset">วางกลางบัตร</button></div></div>
+        <div class="rowb al" data-alg="wm"><button class="tg sm" data-a="left">ชิดซ้าย</button><button class="tg sm" data-a="center">กึ่งกลาง</button><button class="tg sm" data-a="right">ชิดขวา</button></div>
+        <div class="rot"><span class="lbl">หมุน</span><button class="tg sm" id="wRotL" aria-label="หมุนทวนเข็ม 1 องศา">↺</button><input type="range" id="wAng" min="-90" max="90" step="1" aria-label="องศาการหมุนลายน้ำ"><button class="tg sm" id="wRotR" aria-label="หมุนตามเข็ม 1 องศา">↻</button><b id="wAngV">0°</b></div>
+        <div class="rowb"><button class="tg sm" id="wAng0">ตั้งตรง 0°</button><button class="tg sm" id="wReset">คืนตำแหน่งบนบัตร</button></div></div>
       <div class="grp"><label class="sw"><input type="checkbox" id="cert" checked> ลายเซ็นรับรองสำเนา</label>
         <div class="nm"><select id="pre" class="in" aria-label="คำนำหน้า"><option>นาย</option><option>นาง</option><option>นางสาว</option><option>เด็กชาย</option><option>เด็กหญิง</option><option value="">ไม่ระบุ</option></select><input id="nm" class="in" placeholder="ชื่อ นามสกุล" aria-label="ชื่อ นามสกุล"></div>
         <div class="rowb" style="align-items:center"><span class="lbl">ขนาดตัวหนังสือ</span><button class="tg" id="fsDn" aria-label="ลดขนาดตัวหนังสือ">ก−</button><b id="fsV" style="min-width:56px;text-align:center">16 pt</b><button class="tg" id="fsUp" aria-label="เพิ่มขนาดตัวหนังสือ">ก+</button></div>
-        <div class="rowb"><button class="tg sm" id="cReset">จัดกึ่งกลางใต้บัตร</button></div></div>
+        <div class="rowb al" data-alg="cert"><button class="tg sm" data-a="left">ชิดซ้าย</button><button class="tg sm" data-a="center">กึ่งกลาง</button><button class="tg sm" data-a="right">ชิดขวา</button></div>
+        <div class="rowb"><button class="tg sm" id="cReset">คืนตำแหน่งใต้บัตร</button></div></div>
       <div class="rowb"><button class="pdfBtn" id="idPdf2">บันทึก PDF</button><button class="pdfBtn alt" id="idJpg">บันทึกเป็นรูป</button></div>
       <button class="tg" id="idKeep">เก็บในรายการเอกสาร</button>
     </div>
@@ -449,7 +455,7 @@ const WM_PRE=["ใช้สำหรับสมัครงานเท่า�
 let idS={layout:2,step:0,cards:[],gray:[],src:[],quad:[],retake:false,color:"gray"},idQuad=null;
 const prefs=(()=>{try{return JSON.parse(localStorage.getItem("idPrefs"))||{}}catch{return{}}})();
 let fs=prefs.fs||16;
-function savePrefs(){try{localStorage.setItem("idPrefs",JSON.stringify({wm:$("#wm").value,cert:$("#cert").checked,pre:$("#pre").value,nm:$("#nm").value,fs,wmColor:ov.wmColor,wmSize:ov.wmSize,wmAngle:ov.wmAngle,color:idS.color}))}catch{}}
+function savePrefs(){try{localStorage.setItem("idPrefs",JSON.stringify({wm:$("#wm").value,cert:$("#cert").checked,pre:$("#pre").value,nm:$("#nm").value,fs,wmColor:ov.wmColor,wmSize:ov.wmSize,wmAngle:ov.wmAngle,color:idS.color,wmAlign:ov.wmAlign,certAlign:ov.certAlign}))}catch{}}
 const tops=()=>idS.layout===1?[(297-CARD_H)/2]:[(297-CARD_H*2-GAP)/2,(297-CARD_H*2-GAP)/2+CARD_H+GAP];
 function miniA4(n){const t=n===1?[(297-54)/2]:[84.5,158.5];return`<svg viewBox="0 0 210 297" aria-hidden="true"><rect x="1" y="1" width="208" height="295" fill="#fff" stroke="#c7c7cc" stroke-width="2"/>${t.map(y=>`<rect x="62.2" y="${y}" width="85.6" height="54" rx="4" fill="#fff8d6" stroke="#e0a800" stroke-width="3" stroke-dasharray="8 5"/>`).join("")}</svg>`}
 $("#newId").onclick=()=>{
@@ -492,16 +498,20 @@ function idStore(card,src,quad){
 }
 // overlay objects on the A4 page, in mm
 const WMC={red:"rgba(212,32,32,.78)",black:"rgba(20,20,20,.72)",blue:"rgba(31,63,174,.75)"};
-let ov={wm:[],wmSize:prefs.wmSize||6.5,wmAngle:prefs.wmAngle??-16,wmColor:prefs.wmColor||"blue",cert:{x:105,y:null}},ovNew=true,hits=[],sel=null;
-const resetWm=()=>{ov.wm=tops().map(t=>({x:105,y:t+CARD_H/2}))};
-const resetCert=()=>{ov.cert={x:105,y:null}};
+let ov={wm:[],wmSize:prefs.wmSize||6.5,wmAngle:prefs.wmAngle??-16,wmColor:prefs.wmColor||"blue",cert:{x:105,y:null},wmAlign:prefs.wmAlign||"center",certAlign:prefs.certAlign||"center"},ovNew=true,hits=[],sel=null;
+const AX={left:(210-CARD_W)/2+2,center:105,right:(210+CARD_W)/2-2},CX={left:(210-CARD_W)/2,center:105,right:(210+CARD_W)/2};
+const resetWm=()=>{ov.wm=tops().map(t=>({x:AX[ov.wmAlign],y:t+CARD_H/2}))};
+const resetCert=()=>{ov.cert={x:CX[ov.certAlign],y:null}};
+function syncAlign(){document.querySelectorAll("[data-alg]").forEach(g=>g.querySelectorAll("[data-a]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.a===(g.dataset.alg==="wm"?ov.wmAlign:ov.certAlign))))}
+document.querySelectorAll("[data-alg]").forEach(g=>g.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;
+  if(g.dataset.alg==="wm"){ov.wmAlign=a;ov.wm.forEach(o=>o.x=AX[a])}else{ov.certAlign=a;ov.cert.x=CX[a]}syncAlign();savePrefs();renderA4()}));
 function openIdv(){show("idv");
   if(ovNew||ov.wm.length!==idS.layout){resetWm();resetCert();ovNew=false}
   const names=idS.layout===1?["บัตร"]:["ด้านหน้า","ด้านหลัง"];
   $("#retakes").innerHTML=names.map((t,i)=>`<div class="cardRow">${idS.cards[i]?`<img src="${scaled(idS.cards[i],160)}" alt="">`:""}<span>${t}</span><button class="tg sm" data-adj="${i}" ${idS.src[i]?"":"disabled"}>ปรับมุม</button><button class="tg sm" data-rt="${i}">ถ่ายใหม่</button></div>`).join("");
   $("#wmPre").innerHTML=WM_PRE.map(t=>`<button class="tg sm" data-wp="${t}">${t}</button>`).join("");
   document.querySelectorAll("[data-c]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.c===idS.color));
-  document.querySelectorAll("[data-wc]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.wc===ov.wmColor));
+  document.querySelectorAll("[data-wc]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.wc===ov.wmColor));syncAlign();
   renderA4();
 }
 if(prefs.color)idS.color=prefs.color;$("#wm").value=prefs.wm||"";$("#cert").checked=prefs.cert!==false;$("#pre").value=prefs.pre??"นาย";$("#nm").value=prefs.nm||"";$("#fsV").textContent=fs+" pt";
@@ -516,8 +526,10 @@ $("#fsDn").onclick=()=>{fs=Math.max(10,fs-1);$("#fsV").textContent=fs+" pt";save
 $("#fsUp").onclick=()=>{fs=Math.min(32,fs+1);$("#fsV").textContent=fs+" pt";savePrefs();renderA4()};
 $("#wsDn").onclick=()=>{ov.wmSize=Math.max(3,ov.wmSize-.5);savePrefs();renderA4()};
 $("#wsUp").onclick=()=>{ov.wmSize=Math.min(18,ov.wmSize+.5);savePrefs();renderA4()};
-$("#wRotL").onclick=()=>{ov.wmAngle=Math.max(-90,ov.wmAngle-5);savePrefs();renderA4()};
-$("#wRotR").onclick=()=>{ov.wmAngle=Math.min(90,ov.wmAngle+5);savePrefs();renderA4()};
+function setAng(v){ov.wmAngle=Math.max(-90,Math.min(90,Math.round(v)));$("#wAng").value=ov.wmAngle;$("#wAngV").textContent=ov.wmAngle+"°";savePrefs();renderA4()}
+$("#wRotL").onclick=()=>setAng(ov.wmAngle-1);$("#wRotR").onclick=()=>setAng(ov.wmAngle+1);$("#wAng0").onclick=()=>setAng(0);
+$("#wAng").addEventListener("input",e=>setAng(+e.target.value));
+$("#wAng").value=ov.wmAngle;$("#wAngV").textContent=ov.wmAngle+"°";
 $("#wReset").onclick=()=>{resetWm();renderA4()};
 $("#cReset").onclick=()=>{resetCert();renderA4()};
 const FONT='Anuphan,"Noto Sans Thai",sans-serif';
@@ -536,14 +548,14 @@ function drawA4(exp){
       x.strokeStyle="#cfcfcf";x.lineWidth=1.5;x.beginPath();x.roundRect(cx,y,cw,ch,r);x.stroke()}
     else{x.setLineDash([18,12]);x.strokeStyle="#e0a800";x.lineWidth=4;x.beginPath();x.roundRect(cx,y,cw,ch,r);x.stroke();x.setLineDash([]);
       x.fillStyle="#b38600";x.font=`400 ${5*MM}px ${FONT}`;x.textAlign="center";x.textBaseline="middle";x.fillText(idS.layout===2?(i?"ด้านหลัง":"ด้านหน้า"):"บัตรประชาชน",W/2,y+ch/2)}});
-  if(wm){const s=ov.wmSize*MM,a=ov.wmAngle*Math.PI/180;x.font=`700 ${s}px ${FONT}`;x.textAlign="center";x.textBaseline="middle";const w=x.measureText(wm).width;
-    ov.wm.forEach((o,i)=>{x.save();x.translate(o.x*MM,o.y*MM);x.rotate(a);x.fillStyle=WMC[ov.wmColor];x.fillText(wm,0,0);x.restore();hits.push({t:"wm",i,cx:o.x*MM,cy:o.y*MM,w,h:s*1.4,a})})}
+  if(wm){const s=ov.wmSize*MM,a=ov.wmAngle*Math.PI/180;x.font=`700 ${s}px ${FONT}`;x.textAlign=ov.wmAlign;x.textBaseline="middle";const w=x.measureText(wm).width,off=ov.wmAlign==="left"?w/2:ov.wmAlign==="right"?-w/2:0;
+    ov.wm.forEach((o,i)=>{x.save();x.translate(o.x*MM,o.y*MM);x.rotate(a);x.fillStyle=WMC[ov.wmColor];x.fillText(wm,0,0);x.restore();hits.push({t:"wm",i,cx:o.x*MM+Math.cos(a)*off,cy:o.y*MM+Math.sin(a)*off,w,h:s*1.4,a})})}
   if($("#cert").checked){
     const px=fs/72*25.4*MM,lh=px*1.6,top=(ov.cert.y??(T[T.length-1]+CARD_H+8))*MM,X=ov.cert.x*MM;
     const nm=$("#nm").value.trim(),line=nm?`(${$("#pre").value}${nm})`:"(..................................................)";
-    x.fillStyle="#111";x.textAlign="center";x.textBaseline="alphabetic";x.font=`400 ${px}px ${FONT}`;
+    x.fillStyle="#111";x.textAlign=ov.certAlign;x.textBaseline="alphabetic";x.font=`400 ${px}px ${FONT}`;
     const b1=top+px,b3=b1+lh*2.4;x.fillText("สำเนาถูกต้อง",X,b1);x.fillText(line,X,b3);
-    const w=Math.max(x.measureText("สำเนาถูกต้อง").width,x.measureText(line).width),h=b3+px*.45-top;hits.push({t:"cert",cx:X,cy:top+h/2,w,h,a:0})}
+    const w=Math.max(x.measureText("สำเนาถูกต้อง").width,x.measureText(line).width),h=b3+px*.45-top;hits.push({t:"cert",cx:X+(ov.certAlign==="left"?w/2:ov.certAlign==="right"?-w/2:0),cy:top+h/2,w,h,a:0})}
   if(!exp&&sel){const hh=hits.find(h=>h.t===sel.t&&(h.t!=="wm"||h.i===sel.i));if(hh){x.save();x.translate(hh.cx,hh.cy);x.rotate(hh.a);x.setLineDash([14,10]);x.strokeStyle="#e0a800";x.lineWidth=3;x.strokeRect(-hh.w/2-12,-hh.h/2-8,hh.w+24,hh.h+16);x.restore()}}
 }
 {const cv=$("#a4cv");let drag=null,raf=0;
