@@ -45,7 +45,13 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 /* id preview */
 .idWrap{max-width:980px;margin:0 auto;padding:8px 16px 40px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,360px);gap:24px;align-items:start}
 .idPaper{background:light-dark(#e5e5ea,#111);border-radius:12px;padding:16px;display:grid;place-items:center}
-#a4cv{width:min(100%,520px);aspect-ratio:210/297;background:#fff;box-shadow:0 4px 18px #0003}
+#a4cv{width:min(100%,520px);aspect-ratio:210/297;background:#fff;box-shadow:0 4px 18px #0003;touch-action:none;cursor:grab}
+.tip{font-size:14px;color:var(--mute);background:var(--card);border-radius:10px;padding:10px 12px}
+.dot{width:40px;height:40px;min-width:40px;border-radius:50%;padding:0;background:var(--d);border:3px solid var(--card);box-shadow:0 0 0 1px var(--line)}
+.dot[aria-pressed=true]{box-shadow:0 0 0 2px var(--acc)}
+.cardRow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cardRow img{width:64px;height:40px;object-fit:cover;border-radius:4px;border:1px solid var(--line)}
+.cardRow span{min-width:70px}
 .idCtl{display:grid;gap:16px}
 .grp{display:grid;gap:8px}
 .lbl{font-size:14px;color:var(--mute)}
@@ -150,13 +156,18 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
   <div class="idWrap">
     <div class="idPaper"><canvas id="a4cv" aria-label="ตัวอย่างกระดาษ A4"></canvas></div>
     <div class="idCtl">
-      <div class="grp"><div class="lbl">ถ่ายใหม่</div><div class="rowb" id="retakes"></div></div>
+      <div class="tip">ลากลายน้ำหรือข้อความรับรองบนกระดาษเพื่อย้ายตำแหน่งได้</div>
+      <div class="grp"><div class="lbl">รูปบัตร</div><div id="retakes" class="grp"></div></div>
       <div class="grp"><div class="lbl">สีของบัตร</div><div class="rowb"><button class="tg" data-c="color">สี</button><button class="tg" data-c="gray">ขาวดำ</button></div></div>
-      <div class="grp"><label class="lbl" for="wm">ลายน้ำบนบัตร</label><input id="wm" class="in" placeholder="ใช้สำหรับสมัครงานเท่านั้น" maxlength="60">
-        <div class="rowb" id="wmPre"></div></div>
+      <div class="grp"><label class="lbl" for="wm">ลายน้ำ</label><input id="wm" class="in" placeholder="ใช้สำหรับสมัครงานเท่านั้น" maxlength="60">
+        <div class="rowb" id="wmPre"></div>
+        <div class="rowb" style="align-items:center"><span class="lbl">สี</span><button class="dot" data-wc="red" aria-label="แดง" style="--d:#d42020"></button><button class="dot" data-wc="black" aria-label="ดำ" style="--d:#1a1a1a"></button><button class="dot" data-wc="blue" aria-label="น้ำเงิน" style="--d:#1f3fae"></button>
+          <span class="lbl" style="margin-left:8px">ขนาด</span><button class="tg" id="wsDn" aria-label="ลดขนาดลายน้ำ">ก−</button><button class="tg" id="wsUp" aria-label="เพิ่มขนาดลายน้ำ">ก+</button></div>
+        <div class="rowb"><button class="tg sm" id="wRotL">↺ เอียงซ้าย</button><button class="tg sm" id="wRotR">↻ เอียงขวา</button><button class="tg sm" id="wReset">วางกลางบัตร</button></div></div>
       <div class="grp"><label class="sw"><input type="checkbox" id="cert" checked> ลายเซ็นรับรองสำเนา</label>
         <div class="nm"><select id="pre" class="in" aria-label="คำนำหน้า"><option>นาย</option><option>นาง</option><option>นางสาว</option><option>เด็กชาย</option><option>เด็กหญิง</option><option value="">ไม่ระบุ</option></select><input id="nm" class="in" placeholder="ชื่อ นามสกุล" aria-label="ชื่อ นามสกุล"></div>
-        <div class="rowb" style="align-items:center"><span class="lbl">ขนาดตัวหนังสือ</span><button class="tg" id="fsDn" aria-label="ลดขนาดตัวหนังสือ">ก−</button><b id="fsV" style="min-width:56px;text-align:center">16 pt</b><button class="tg" id="fsUp" aria-label="เพิ่มขนาดตัวหนังสือ">ก+</button></div></div>
+        <div class="rowb" style="align-items:center"><span class="lbl">ขนาดตัวหนังสือ</span><button class="tg" id="fsDn" aria-label="ลดขนาดตัวหนังสือ">ก−</button><b id="fsV" style="min-width:56px;text-align:center">16 pt</b><button class="tg" id="fsUp" aria-label="เพิ่มขนาดตัวหนังสือ">ก+</button></div>
+        <div class="rowb"><button class="tg sm" id="cReset">จัดกึ่งกลางใต้บัตร</button></div></div>
       <div class="rowb"><button class="pdfBtn" id="idPdf2">บันทึก PDF</button><button class="pdfBtn alt" id="idJpg">บันทึกเป็นรูป</button></div>
       <button class="tg" id="idKeep">เก็บในรายการเอกสาร</button>
     </div>
@@ -169,7 +180,7 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
     <button id="camCancel">ยกเลิก</button>
     <b id="camLabel" hidden></b>
     <div class="seg" id="seg" role="group" aria-label="โหมดถ่าย"><button data-m="auto" aria-pressed="true">อัตโนมัติ</button><button data-m="manual" aria-pressed="false">ด้วยตนเอง</button></div>
-    <button id="camFx" class="y">สี</button>
+    <button id="camFx" class="y">ขาวดำ</button>
   </div>
   <div class="stage" id="camStage">
     <video id="video" playsinline muted autoplay></video>
@@ -228,7 +239,7 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 const $=s=>document.querySelector(s);
 const FX=[["color","สี"],["gray","ระดับสีเทา"],["bw","ขาวดำ"],["photo","ภาพถ่าย"]];
 const fxName=k=>(FX.find(f=>f[0]===k)||FX[0])[1];
-let docs=[],doc=null,session=[],sessionFx="color",mode="auto",stream=null,camOn=false,dl=null;
+let docs=[],doc=null,session=[],sessionFx="bw",mode="auto",stream=null,camOn=false,dl=null;
 const tick=()=>new Promise(r=>setTimeout(r,30));
 function busy(on){$("#busy").classList.toggle("on",on)}
 function toast(t,undo){const e=$("#toast");$("#toastT").textContent=t;const b=$("#toastB");b.hidden=!undo;b.onclick=()=>{e.classList.remove("on");undo()};e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("on"),undo?5000:2600)}
@@ -384,7 +395,7 @@ async function finishScan(){if(!session.length)return;stopCam();
 // ---------- review / crop ----------
 const rcv=$("#rcv"),rctx=rcv.getContext("2d");let rp=null,rmode="new",rfit={k:1,ox:0,oy:0},drag=-1,editPage=null;
 function openReview(p,m){rp=p;rmode=m;if(m!=="edit")camOn=false;show("rev");
-  $("#revL").textContent=m==="edit"?"ยกเลิก":"ถ่ายใหม่";$("#revR").textContent=m==="new"?"เก็บภาพสแกน":m==="id"?"ใช้ภาพนี้":"เสร็จ";requestAnimationFrame(paintRev)}
+  $("#revL").textContent=m==="edit"||m==="idadj"?"ยกเลิก":"ถ่ายใหม่";$("#revR").textContent=m==="new"?"เก็บภาพสแกน":m==="id"?"ใช้ภาพนี้":"เสร็จ";$("#revTitle").textContent=m==="id"||m==="idadj"?"ลากมุมให้ตรงขอบบัตร":"ลากมุมให้ตรงขอบ";requestAnimationFrame(paintRev)}
 function paintRev(){if(!rp)return;const[W,H]=sizeCanvas(rcv),img=rp.src,k=Math.min((W-56)/img.width,(H-56)/img.height);rfit={k,ox:(W-img.width*k)/2,oy:(H-img.height*k)/2};
   rctx.clearRect(0,0,W,H);rctx.drawImage(img,rfit.ox,rfit.oy,img.width*k,img.height*k);
   const P=rp.quad.map(([x,y])=>[rfit.ox+x*k,rfit.oy+y*k]),path=()=>{rctx.beginPath();rctx.moveTo(...P[0]);P.slice(1).forEach(p=>rctx.lineTo(...p));rctx.closePath()};
@@ -402,9 +413,9 @@ const rup=()=>{if(drag<0)return;drag=-1;paintRev()};rcv.addEventListener("pointe
 $("#revAuto").onclick=()=>{const q=detectQuad(rp.src,rp.src.width,rp.src.height);if(q){rp.quad=q;paintRev()}else toast("หาขอบไม่เจอ ลากมุมเองได้เลย")};
 $("#revFull").onclick=()=>{rp.quad=inset(rp.src.width,rp.src.height,0);paintRev()};
 function backToCam(){show("cam");if(stream){camOn=true;requestAnimationFrame(loop)}}
-$("#revL").onclick=()=>{const m=rmode;rp=null;if(m==="edit")openDoc(doc,cur);else backToCam()};
+$("#revL").onclick=()=>{const m=rmode;rp=null;if(m==="edit")openDoc(doc,cur);else if(m==="idadj"){idS.retake=false;openIdv()}else backToCam()};
 $("#revR").onclick=async()=>{busy(true);await tick();
-  if(rmode==="id"){const card=cardFrom(rp.src,rp.quad);rp=null;busy(false);show("cam");idStore(card);return}
+  if(rmode==="id"||rmode==="idadj"){const card=cardFrom(rp.src,rp.quad),src=rp.src,q=rp.quad;rp=null;busy(false);show("cam");idStore(card,src,q);return}
   rp.warped=null;render(rp);busy(false);
   if(rmode==="new"){session.push(rp);rp=null;updStack();backToCam()}
   else{Object.assign(editPage,{quad:rp.quad,warped:rp.warped,out:rp.out,thumb:rp.thumb,view:rp.view});rp=null;persist(doc);openDoc(doc,cur)}};
@@ -435,10 +446,10 @@ $("#tDel").onclick=async()=>{const p=doc.pages[cur];if(!p)return;
 // ---------- ID card ----------
 const CARD_W=85.6,CARD_H=54,GAP=20,DPI=200,MM=DPI/25.4;
 const WM_PRE=["ใช้สำหรับสมัครงานเท่านั้น","ใช้สำหรับยืนยันตัวตนเท่านั้น","ใช้สำหรับเปิดบัญชีธนาคารเท่านั้น","ใช้สำหรับติดต่อราชการเท่านั้น"];
-let idS={layout:2,step:0,cards:[],gray:[],retake:false,color:"color"},idQuad=null;
+let idS={layout:2,step:0,cards:[],gray:[],src:[],quad:[],retake:false,color:"gray"},idQuad=null;
 const prefs=(()=>{try{return JSON.parse(localStorage.getItem("idPrefs"))||{}}catch{return{}}})();
 let fs=prefs.fs||16;
-function savePrefs(){try{localStorage.setItem("idPrefs",JSON.stringify({wm:$("#wm").value,cert:$("#cert").checked,pre:$("#pre").value,nm:$("#nm").value,fs}))}catch{}}
+function savePrefs(){try{localStorage.setItem("idPrefs",JSON.stringify({wm:$("#wm").value,cert:$("#cert").checked,pre:$("#pre").value,nm:$("#nm").value,fs,wmColor:ov.wmColor,wmSize:ov.wmSize,wmAngle:ov.wmAngle,color:idS.color}))}catch{}}
 const tops=()=>idS.layout===1?[(297-CARD_H)/2]:[(297-CARD_H*2-GAP)/2,(297-CARD_H*2-GAP)/2+CARD_H+GAP];
 function miniA4(n){const t=n===1?[(297-54)/2]:[84.5,158.5];return`<svg viewBox="0 0 210 297" aria-hidden="true"><rect x="1" y="1" width="208" height="295" fill="#fff" stroke="#c7c7cc" stroke-width="2"/>${t.map(y=>`<rect x="62.2" y="${y}" width="85.6" height="54" rx="4" fill="#fff8d6" stroke="#e0a800" stroke-width="3" stroke-dasharray="8 5"/>`).join("")}</svg>`}
 $("#newId").onclick=()=>{
@@ -449,7 +460,7 @@ $("#newId").onclick=()=>{
   $("#sheet").querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>{idS.layout=+b.dataset.l;sync()});
   $("#sheet").querySelectorAll("[data-md]").forEach(b=>b.onclick=()=>{mode=b.dataset.md;sync()});
   $("#idX").onclick=closeSheet;
-  $("#idGo").onclick=()=>{closeSheet();idS={...idS,step:0,cards:[],gray:[],retake:false};startCam("id")};
+  $("#idGo").onclick=()=>{closeSheet();idS={...idS,step:0,cards:[],gray:[],src:[],quad:[],retake:false};ovNew=true;sel=null;startCam("id")};
 };
 function idLabel(){$("#camLabel").textContent=idS.layout===1?"บัตรประชาชน":idS.step===0?"ด้านหน้า · 1/2":"ด้านหลัง · 2/2"}
 function guideRect(W,H){const gw=Math.min(W*.86,H*.6*CARD_W/CARD_H),gh=gw*CARD_H/CARD_W;return{x:(W-gw)/2,y:(H-gh)/2,w:gw,h:gh}}
@@ -472,52 +483,85 @@ function idCapture(){
   if(idQuad){const{q:s,sx,sy,sw,cw}=idQuad,f=sw/cw;q=s.map(([x,y])=>[(sx+x*f)*k,(sy+y*f)*k])}
   else{const[W,H]=[ccv.clientWidth,ccv.clientHeight],g=guideRect(W,H),kk=camFit.k,x=(g.x-camFit.ox)/kk*k,y=(g.y-camFit.oy)/kk*k,w=g.w/kk*k,h=g.h/kk*k;q=[[x,y],[x+w,y],[x+w,y+h],[x,y+h]]}
   const f=$("#flash");f.classList.add("on");requestAnimationFrame(()=>requestAnimationFrame(()=>f.classList.remove("on")));
-  idStore(cardFrom(c,q));
+  prevRaw=null;stable=0;idQuad=null;openReview({src:c,quad:q,fx:"photo",rot:0},"id");
 }
-function idStore(card){
-  const i=idS.step;idS.cards[i]=filter(card,"color");idS.gray[i]=null;prevRaw=null;stable=0;idQuad=null;
+function idStore(card,src,quad){
+  const i=idS.step;idS.cards[i]=filter(card,"color");idS.gray[i]=null;idS.src[i]=src;idS.quad[i]=quad.map(p=>[...p]);prevRaw=null;stable=0;idQuad=null;
   if(idS.retake){idS.retake=false;stopCam();openIdv();return}
   idS.step++;if(idS.step>=idS.layout){stopCam();openIdv()}else{idLabel();toast("ได้ด้านหน้าแล้ว ต่อด้วยด้านหลัง");if(stream){camOn=true;requestAnimationFrame(loop)}}
 }
+// overlay objects on the A4 page, in mm
+const WMC={red:"rgba(212,32,32,.78)",black:"rgba(20,20,20,.72)",blue:"rgba(31,63,174,.75)"};
+let ov={wm:[],wmSize:prefs.wmSize||6.5,wmAngle:prefs.wmAngle??-16,wmColor:prefs.wmColor||"blue",cert:{x:105,y:null}},ovNew=true,hits=[],sel=null;
+const resetWm=()=>{ov.wm=tops().map(t=>({x:105,y:t+CARD_H/2}))};
+const resetCert=()=>{ov.cert={x:105,y:null}};
 function openIdv(){show("idv");
-  $("#retakes").innerHTML=(idS.layout===1?["บัตร"]:["ด้านหน้า","ด้านหลัง"]).map((t,i)=>`<button class="tg sm" data-rt="${i}">${t}</button>`).join("");
+  if(ovNew||ov.wm.length!==idS.layout){resetWm();resetCert();ovNew=false}
+  const names=idS.layout===1?["บัตร"]:["ด้านหน้า","ด้านหลัง"];
+  $("#retakes").innerHTML=names.map((t,i)=>`<div class="cardRow">${idS.cards[i]?`<img src="${scaled(idS.cards[i],160)}" alt="">`:""}<span>${t}</span><button class="tg sm" data-adj="${i}" ${idS.src[i]?"":"disabled"}>ปรับมุม</button><button class="tg sm" data-rt="${i}">ถ่ายใหม่</button></div>`).join("");
   $("#wmPre").innerHTML=WM_PRE.map(t=>`<button class="tg sm" data-wp="${t}">${t}</button>`).join("");
   document.querySelectorAll("[data-c]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.c===idS.color));
+  document.querySelectorAll("[data-wc]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.wc===ov.wmColor));
   renderA4();
 }
-$("#wm").value=prefs.wm||"";$("#cert").checked=prefs.cert!==false;$("#pre").value=prefs.pre??"นาย";$("#nm").value=prefs.nm||"";$("#fsV").textContent=fs+" pt";
-$("#retakes").addEventListener("click",e=>{const b=e.target.closest("[data-rt]");if(!b)return;idS.step=+b.dataset.rt;idS.retake=true;startCam("id")});
+if(prefs.color)idS.color=prefs.color;$("#wm").value=prefs.wm||"";$("#cert").checked=prefs.cert!==false;$("#pre").value=prefs.pre??"นาย";$("#nm").value=prefs.nm||"";$("#fsV").textContent=fs+" pt";
+$("#retakes").addEventListener("click",e=>{const r=e.target.closest("[data-rt]"),a=e.target.closest("[data-adj]");
+  if(r){idS.step=+r.dataset.rt;idS.retake=true;startCam("id")}
+  else if(a){const i=+a.dataset.adj;idS.step=i;idS.retake=true;openReview({src:idS.src[i],quad:idS.quad[i].map(p=>[...p]),fx:"photo",rot:0},"idadj")}});
 $("#wmPre").addEventListener("click",e=>{const b=e.target.closest("[data-wp]");if(!b)return;$("#wm").value=b.dataset.wp;savePrefs();renderA4()});
-document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{idS.color=b.dataset.c;document.querySelectorAll("[data-c]").forEach(x=>x.setAttribute("aria-pressed",x===b));renderA4()});
+document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{idS.color=b.dataset.c;savePrefs();document.querySelectorAll("[data-c]").forEach(x=>x.setAttribute("aria-pressed",x===b));renderA4()});
+document.querySelectorAll("[data-wc]").forEach(b=>b.onclick=()=>{ov.wmColor=b.dataset.wc;document.querySelectorAll("[data-wc]").forEach(x=>x.setAttribute("aria-pressed",x===b));savePrefs();renderA4()});
 let rT;["wm","nm","pre","cert"].forEach(id=>$("#"+id).addEventListener(id==="cert"||id==="pre"?"change":"input",()=>{savePrefs();clearTimeout(rT);rT=setTimeout(renderA4,150)}));
 $("#fsDn").onclick=()=>{fs=Math.max(10,fs-1);$("#fsV").textContent=fs+" pt";savePrefs();renderA4()};
 $("#fsUp").onclick=()=>{fs=Math.min(32,fs+1);$("#fsV").textContent=fs+" pt";savePrefs();renderA4()};
+$("#wsDn").onclick=()=>{ov.wmSize=Math.max(3,ov.wmSize-.5);savePrefs();renderA4()};
+$("#wsUp").onclick=()=>{ov.wmSize=Math.min(18,ov.wmSize+.5);savePrefs();renderA4()};
+$("#wRotL").onclick=()=>{ov.wmAngle=Math.max(-90,ov.wmAngle-5);savePrefs();renderA4()};
+$("#wRotR").onclick=()=>{ov.wmAngle=Math.min(90,ov.wmAngle+5);savePrefs();renderA4()};
+$("#wReset").onclick=()=>{resetWm();renderA4()};
+$("#cReset").onclick=()=>{resetCert();renderA4()};
 const FONT='Anuphan,"Noto Sans Thai",sans-serif';
-async function renderA4(){
-  try{await Promise.all([document.fonts.load(`400 40px Anuphan`,"สำเนาถูกต้อง"),document.fonts.load(`700 40px Anuphan`,"ใช้สำหรับ")])}catch{}
-  const cv=$("#a4cv"),W=Math.round(210*MM),H=Math.round(297*MM);cv.width=W;cv.height=H;const x=cv.getContext("2d");
-  x.fillStyle="#fff";x.fillRect(0,0,W,H);
+let fontsOk=null;
+async function renderA4(exp=false){
+  if(!fontsOk)fontsOk=Promise.all([document.fonts.load(`400 40px Anuphan`,"สำเนาถูกต้อง"),document.fonts.load(`700 40px Anuphan`,"ใช้สำหรับ")]).catch(()=>{});
+  await fontsOk;drawA4(exp);
+}
+function drawA4(exp){
+  const cv=$("#a4cv"),W=Math.round(210*MM),H=Math.round(297*MM);if(cv.width!==W){cv.width=W;cv.height=H}const x=cv.getContext("2d");
+  x.setTransform(1,0,0,1,0,0);x.fillStyle="#fff";x.fillRect(0,0,W,H);hits=[];
   const cw=CARD_W*MM,ch=CARD_H*MM,cx=(W-cw)/2,T=tops(),wm=$("#wm").value.trim(),r=3.2*MM;
   T.forEach((tp,i)=>{const y=tp*MM;let card=idS.cards[i];
     if(card){if(idS.color==="gray"){if(!idS.gray[i])idS.gray[i]=filter(card,"gray");card=idS.gray[i]}
-      x.save();x.beginPath();x.roundRect(cx,y,cw,ch,r);x.clip();x.drawImage(card,cx,y,cw,ch);
-      if(wm){x.translate(cx+cw/2,y+ch/2);x.rotate(-16*Math.PI/180);let s=ch*.17;x.font=`700 ${s}px ${FONT}`;while(x.measureText(wm).width>cw*.98&&s>8){s-=2;x.font=`700 ${s}px ${FONT}`}
-        x.textAlign="center";x.textBaseline="middle";x.fillStyle="rgba(25,55,160,.6)";x.fillText(wm,0,0)}
-      x.restore();x.strokeStyle="#cfcfcf";x.lineWidth=1.5;x.beginPath();x.roundRect(cx,y,cw,ch,r);x.stroke()}
+      x.save();x.beginPath();x.roundRect(cx,y,cw,ch,r);x.clip();x.drawImage(card,cx,y,cw,ch);x.restore();
+      x.strokeStyle="#cfcfcf";x.lineWidth=1.5;x.beginPath();x.roundRect(cx,y,cw,ch,r);x.stroke()}
     else{x.setLineDash([18,12]);x.strokeStyle="#e0a800";x.lineWidth=4;x.beginPath();x.roundRect(cx,y,cw,ch,r);x.stroke();x.setLineDash([]);
       x.fillStyle="#b38600";x.font=`400 ${5*MM}px ${FONT}`;x.textAlign="center";x.textBaseline="middle";x.fillText(idS.layout===2?(i?"ด้านหลัง":"ด้านหน้า"):"บัตรประชาชน",W/2,y+ch/2)}});
+  if(wm){const s=ov.wmSize*MM,a=ov.wmAngle*Math.PI/180;x.font=`700 ${s}px ${FONT}`;x.textAlign="center";x.textBaseline="middle";const w=x.measureText(wm).width;
+    ov.wm.forEach((o,i)=>{x.save();x.translate(o.x*MM,o.y*MM);x.rotate(a);x.fillStyle=WMC[ov.wmColor];x.fillText(wm,0,0);x.restore();hits.push({t:"wm",i,cx:o.x*MM,cy:o.y*MM,w,h:s*1.4,a})})}
   if($("#cert").checked){
-    const px=fs/72*25.4*MM,lh=px*1.6,base=(T[T.length-1]+CARD_H)*MM+10*MM+px;
+    const px=fs/72*25.4*MM,lh=px*1.6,top=(ov.cert.y??(T[T.length-1]+CARD_H+8))*MM,X=ov.cert.x*MM;
     const nm=$("#nm").value.trim(),line=nm?`(${$("#pre").value}${nm})`:"(..................................................)";
     x.fillStyle="#111";x.textAlign="center";x.textBaseline="alphabetic";x.font=`400 ${px}px ${FONT}`;
-    x.fillText("สำเนาถูกต้อง",W/2,base);x.fillText(line,W/2,base+lh*2.4)}
+    const b1=top+px,b3=b1+lh*2.4;x.fillText("สำเนาถูกต้อง",X,b1);x.fillText(line,X,b3);
+    const w=Math.max(x.measureText("สำเนาถูกต้อง").width,x.measureText(line).width),h=b3+px*.45-top;hits.push({t:"cert",cx:X,cy:top+h/2,w,h,a:0})}
+  if(!exp&&sel){const hh=hits.find(h=>h.t===sel.t&&(h.t!=="wm"||h.i===sel.i));if(hh){x.save();x.translate(hh.cx,hh.cy);x.rotate(hh.a);x.setLineDash([14,10]);x.strokeStyle="#e0a800";x.lineWidth=3;x.strokeRect(-hh.w/2-12,-hh.h/2-8,hh.w+24,hh.h+16);x.restore()}}
 }
+{const cv=$("#a4cv");let drag=null,raf=0;
+  const pt=e=>{const r=cv.getBoundingClientRect(),k=cv.width/r.width;return[(e.clientX-r.left)*k,(e.clientY-r.top)*k]};
+  cv.addEventListener("pointerdown",e=>{const[px,py]=pt(e);sel=null;drag=null;
+    for(let j=hits.length-1;j>=0;j--){const h=hits[j],dx=px-h.cx,dy=py-h.cy,c=Math.cos(-h.a),s=Math.sin(-h.a),lx=dx*c-dy*s,ly=dx*s+dy*c;
+      if(Math.abs(lx)<=h.w/2+30&&Math.abs(ly)<=h.h/2+30){sel={t:h.t,i:h.i};const o=h.t==="wm"?ov.wm[h.i]:ov.cert;
+        if(h.t==="cert"&&o.y==null)o.y=tops()[tops().length-1]+CARD_H+8;drag={o,ox:px/MM-o.x,oy:py/MM-o.y};cv.setPointerCapture(e.pointerId);break}}
+    drawA4()});
+  cv.addEventListener("pointermove",e=>{if(!drag)return;const[px,py]=pt(e);drag.o.x=Math.max(0,Math.min(210,px/MM-drag.ox));drag.o.y=Math.max(0,Math.min(297,py/MM-drag.oy));
+    if(!raf)raf=requestAnimationFrame(()=>{raf=0;drawA4()})});
+  const end=()=>{drag=null};cv.addEventListener("pointerup",end);cv.addEventListener("pointercancel",end)}
 $("#idBack").onclick=()=>show("home");
 const idName=()=>{const n=$("#nm").value.trim();return"สำเนาบัตรประชาชน"+(n?" "+n:"")};
-async function idSavePdf(){busy(true);await tick();await renderA4();const b=await makePdf([{out:$("#a4cv")}]);busy(false);if(await save(idName().replace(/[\\/:*?"<>|]/g,"-")+".pdf",b))toast("บันทึก PDF แล้ว")}
+async function idSavePdf(){busy(true);await tick();await renderA4(true);const b=await makePdf([{out:$("#a4cv")}]);drawA4();busy(false);if(await save(idName().replace(/[\\/:*?"<>|]/g,"-")+".pdf",b))toast("บันทึก PDF แล้ว")}
 $("#idPdf").onclick=idSavePdf;$("#idPdf2").onclick=idSavePdf;
-$("#idJpg").onclick=async()=>{await renderA4();const b=await blobOf($("#a4cv"),.92);if(await save(idName().replace(/[\\/:*?"<>|]/g,"-")+".jpg",b))toast("บันทึกรูปแล้ว")};
-$("#idKeep").onclick=async()=>{await renderA4();const s=$("#a4cv"),c=mk(s.width,s.height);c.getContext("2d").drawImage(s,0,0);
+$("#idJpg").onclick=async()=>{await renderA4(true);const b=await blobOf($("#a4cv"),.92);drawA4();if(await save(idName().replace(/[\\/:*?"<>|]/g,"-")+".jpg",b))toast("บันทึกรูปแล้ว")};
+$("#idKeep").onclick=async()=>{await renderA4(true);const s=$("#a4cv"),c=mk(s.width,s.height);c.getContext("2d").drawImage(s,0,0);drawA4();
   const p={src:c,quad:inset(c.width,c.height,0),fx:"photo",rot:0,warped:c,out:c,thumb:scaled(c,240),view:scaled(c,1500,.86)};
   const d={id:Date.now().toString(36),title:idName(),date:Date.now(),pages:[p]};docs.unshift(d);persist(d);drawHome();toast("เก็บในรายการเอกสารแล้ว");openDoc(d)};
 
